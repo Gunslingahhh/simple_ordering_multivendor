@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label class="form-label">Username (Read-only)</label>
-                        type="text" class="form-control" value="<?= htmlspecialchars($vendor['username']) ?>" disabled>
+                        <input type="text" class="form-control" value="<?= htmlspecialchars($vendor['username']) ?>" disabled>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">New Password (leave blank to keep current)</label>

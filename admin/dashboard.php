@@ -194,7 +194,7 @@ $vendors = $stmtVendors->fetchAll();
                                     </a>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-success">$<?= number_format($v['total_revenue'], 2) ?></span>
+                                    <span class="fw-bold text-success">RM<?= number_format($v['total_revenue'], 2) ?></span>
                                     <br><small class="text-muted"><?= $v['total_orders'] ?> Orders Placed</small>
                                 </td>
                                 <td>
