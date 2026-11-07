@@ -90,9 +90,36 @@ $menu_items = $stmtMenu->fetchAll();
                     <span id="cart-total" class="text-success">$0.00</span>
                 </div>
                 
+                <!-- Customer Details Form -->
+                <div class="mb-2">
+                    <label for="customer-name" class="form-label fw-semibold small">Your Name *</label>
+                    <input type="text" id="customer-name" class="form-control form-control-sm" placeholder="e.g., John Doe" required>
+                </div>
+
+                <div class="mb-2">
+                    <label for="customer-phone" class="form-label fw-semibold small">Phone Number *</label>
+                    <input type="tel" id="customer-phone" class="form-control form-control-sm" placeholder="e.g., +1234567890" required>
+                </div>
+
                 <div class="mb-3">
-                    <label for="customer-name" class="form-label fw-semibold small">Your Name (Optional)</label>
-                    <input type="text" id="customer-name" class="form-control form-control-sm" placeholder="e.g., John Doe">
+                    <label class="form-label fw-semibold small">Order Type *</label>
+                    <select id="order-type" class="form-select form-select-sm">
+                        <option value="delivery">Delivery</option>
+                        <option value="pickup">Self Pickup</option>
+                    </select>
+                </div>
+
+                <!-- Delivery Address & Map Pin Section -->
+                <div id="delivery-address-section" class="mb-3">
+                    <label for="customer-address" class="form-label fw-semibold small">Delivery Address *</label>
+                    <textarea id="customer-address" class="form-control form-control-sm" rows="2" placeholder="Street address, apartment, etc."></textarea>
+                    
+                    <div class="mt-2">
+                        <button type="button" id="get-location-btn" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fa-solid fa-map-pin me-1"></i> Use Google Maps Pin Location
+                        </button>
+                        <input type="hidden" id="maps-pin-url" value="">
+                    </div>
                 </div>
 
                 <?php if ($vendor['status'] === 'open'): ?>
@@ -112,6 +139,51 @@ const vendorName = "<?= addslashes($vendor['store_name']) ?>";
 const vendorWhatsApp = "<?= preg_replace('/[^0-9]/', '', $vendor['whatsapp_number']) ?>";
 
 let cart = [];
+
+// Toggle Delivery Address field visibility based on Order Type
+document.getElementById('order-type').addEventListener('change', function() {
+    const addressSection = document.getElementById('delivery-address-section');
+    if (this.value === 'pickup') {
+        addressSection.style.display = 'none';
+    } else {
+        addressSection.style.display = 'block';
+    }
+});
+
+// Google Maps Pin Location Feature using Browser Geolocation
+document.getElementById('get-location-btn').addEventListener('click', function() {
+    const btn = this;
+    const addressInput = document.getElementById('customer-address');
+    
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Getting Location...';
+
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const mapsUrl = `https://www.maps.google.com/?q=${lat},${lng}`;
+            
+            // Set input value to Google Maps pin coordinate link
+            addressInput.value = `Google Maps Pin Location:\n${mapsUrl}`;
+            document.getElementById('maps-pin-url').value = mapsUrl;
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> Location Pinned Successfully!';
+        },
+        function(error) {
+            alert('Unable to retrieve your location. Please enter your address manually.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-map-pin me-1"></i> Use Google Maps Pin Location';
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+    );
+});
 
 document.querySelectorAll('.add-to-cart').forEach(button => {
     button.addEventListener('click', function() {
@@ -194,11 +266,33 @@ if (orderBtn) {
     orderBtn.addEventListener('click', function() {
         if (cart.length === 0) return;
 
-        const customerName = document.getElementById('customer-name').value.trim() || 'Guest';
-        let message = `Hello *${vendorName}*, I would like to place an order:\n\n`;
-        if (customerName !== 'Guest') {
-            message += `*Customer Name:* ${customerName}\n`;
+        const customerName = document.getElementById('customer-name').value.trim();
+        const customerPhone = document.getElementById('customer-phone').value.trim();
+        const orderType = document.getElementById('order-type').value;
+        const customerAddress = document.getElementById('customer-address').value.trim();
+
+        // Validate required fields
+        if (!customerName || !customerPhone) {
+            alert('Please enter your name and phone number.');
+            document.getElementById('customer-name').focus();
+            return;
         }
+
+        if (orderType === 'delivery' && !customerAddress) {
+            alert('Please provide a delivery address or use the Google Maps pin feature.');
+            document.getElementById('customer-address').focus();
+            return;
+        }
+
+        let message = `Hello *${vendorName}*, I would like to place an *${orderType.toUpperCase()}* order:\n\n`;
+        message += `*Customer Name:* ${customerName}\n`;
+        message += `*Phone Number:* ${customerPhone}\n`;
+        message += `*Order Type:* ${orderType.toUpperCase()}\n`;
+        
+        if (orderType === 'delivery') {
+            message += `*Delivery Address:* ${customerAddress}\n`;
+        }
+        
         message += `--------------------------------\n`;
 
         let total = 0;
@@ -224,10 +318,10 @@ if (orderBtn) {
         message += `*Total Amount:* $${total.toFixed(2)}\n\n`;
         message += `Please confirm my order. Thank you!`;
 
-        // 1. Send data to backend to record revenue and deduct stock
+        // 1. Send data to backend to record revenue, update stock, and save customer info
         const formData = new FormData();
         formData.append('vendor_id', <?= $vendor_id ?>);
-        formData.append('customer_name', customerName);
+        formData.append('customer_name', `${customerName} (${customerPhone}) - ${orderType.toUpperCase()}`);
         formData.append('total_amount', total);
         formData.append('cart_items', JSON.stringify(cart));
 
@@ -255,6 +349,9 @@ if (orderBtn) {
                         <div class="card-body p-4">
                             <h5 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-receipt me-2"></i>Order Receipt</h5>
                             <p class="mb-1 text-muted"><strong>Customer Name:</strong> ${customerName}</p>
+                            <p class="mb-1 text-muted"><strong>Phone:</strong> ${customerPhone}</p>
+                            <p class="mb-1 text-muted"><strong>Order Type:</strong> ${orderType.toUpperCase()}</p>
+                            ${orderType === 'delivery' ? `<p class="mb-1 text-muted"><strong>Address:</strong> ${customerAddress}</p>` : ''}
                             <p class="mb-3 text-muted"><strong>Vendor:</strong> ${vendorName}</p>
                             <hr>
                             <ul class="list-group list-group-flush mb-3">
