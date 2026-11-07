@@ -7,50 +7,201 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// Fetch all vendors with user info
-$stmt = $pdo->query("SELECT v.*, u.username FROM vendors v JOIN users u ON v.user_id = u.id ORDER BY v.created_at DESC");
-$vendors = $stmt->fetchAll();
+// ----------------------------------------------------
+// 1. FETCH OVERALL SYSTEM METRICS FOR REPORTING
+// ----------------------------------------------------
+
+// Total Vendors Count & Status breakdown
+$stmtVendorsCount = $pdo->query("
+    SELECT 
+        COUNT(*) as total_vendors,
+        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_vendors,
+        SUM(CASE WHEN status = 'open' AND is_active = 1 THEN 1 ELSE 0 END) as open_vendors
+    FROM vendors
+");
+$vendorStats = $stmtVendorsCount->fetch();
+
+// Total Menu Items & Availability breakdown
+$stmtMenuStats = $pdo->query("
+    SELECT 
+        COUNT(*) as total_items,
+        SUM(CASE WHEN is_available = 1 THEN 1 ELSE 0 END) as available_items,
+        SUM(CASE WHEN is_available = 0 THEN 1 ELSE 0 END) as unavailable_items
+    FROM menu_items
+");
+$menuStats = $stmtMenuStats->fetch();
+
+// ----------------------------------------------------
+// 2. FETCH VENDOR PERFORMANCE & DETAILS
+// ----------------------------------------------------
+$stmtVendors = $pdo->query("
+    SELECT 
+        v.*, 
+        u.username,
+        COUNT(m.id) as total_items,
+        SUM(CASE WHEN m.is_available = 1 THEN 1 ELSE 0 END) as available_items,
+        COALESCE(SUM(o.total_amount), 0) as total_revenue,
+        COUNT(o.id) as total_orders
+    FROM vendors v
+    JOIN users u ON v.user_id = u.id
+    LEFT JOIN menu_items m ON v.id = m.vendor_id
+    LEFT JOIN orders o ON v.id = o.vendor_id
+    GROUP BY v.id
+    ORDER BY total_revenue DESC
+");
+$vendors = $stmtVendors->fetchAll();
 ?>
 <?php require_once '../includes/header.php'; ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-secondary"><i class="fa-solid fa-user-shield me-2 text-warning"></i>Admin Dashboard</h2>
-    <a href="add_vendor.php" class="btn btn-warning fw-bold"><i class="fa-solid fa-plus me-1"></i> Add New Vendor</a>
+    <h2 class="fw-bold text-secondary">
+        <i class="fa-solid fa-chart-line me-2 text-warning"></i>Admin Performance Dashboard
+    </h2>
+    <a href="add_vendor.php" class="btn btn-warning fw-bold">
+        <i class="fa-solid fa-plus me-1"></i> Add New Vendor
+    </a>
 </div>
 
+<!-- ==================================================== -->
+<!-- SUMMARY ANALYTICS CARDS (METRICS FOR REPORTING)      -->
+<!-- ==================================================== -->
+<div class="row g-3 mb-4">
+    <!-- Total Vendors -->
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Total Vendors</h6>
+                        <h3 class="fw-bold mb-0 text-dark"><?= $vendorStats['total_vendors'] ?></h3>
+                        <small class="text-success fw-semibold"><?= $vendorStats['active_vendors'] ?> Active Accounts</small>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+                        <i class="fa-solid fa-store fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currently Open Stores -->
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Open Stores</h6>
+                        <h3 class="fw-bold mb-0 text-dark"><?= $vendorStats['open_vendors'] ?></h3>
+                        <small class="text-muted">
+                            <?= $vendorStats['total_vendors'] > 0 ? round(($vendorStats['open_vendors'] / $vendorStats['total_vendors']) * 100, 1) : 0 ?>% Open Rate
+                        </small>
+                    </div>
+                    <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
+                        <i class="fa-solid fa-door-open fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Listed Menu Items -->
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Total Menu Items</h6>
+                        <h3 class="fw-bold mb-0 text-dark"><?= $menuStats['total_items'] ?></h3>
+                        <small class="text-success fw-semibold"><?= $menuStats['available_items'] ?> Available</small>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+                        <i class="fa-solid fa-utensils fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Health / Availability Rate -->
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-info h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Menu Health</h6>
+                        <?php 
+                            $availabilityRate = $menuStats['total_items'] > 0 
+                                ? round(($menuStats['available_items'] / $menuStats['total_items']) * 100, 1) 
+                                : 0;
+                        ?>
+                        <h3 class="fw-bold mb-0 text-dark"><?= $availabilityRate ?>%</h3>
+                        <small class="text-muted"><?= $menuStats['unavailable_items'] ?> Items Unavailable</small>
+                    </div>
+                    <div class="bg-info bg-opacity-10 text-info rounded-circle p-3">
+                        <i class="fa-solid fa-circle-check fs-3"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================================================== -->
+<!-- VENDOR PERFORMANCE MONITORING TABLE                  -->
+<!-- ==================================================== -->
 <div class="card shadow-sm">
-    <div class="card-body">
-        <h4 class="card-title mb-3">Registered Vendors</h4>
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list me-2"></i>Vendor Performance Overview</h5>
+        <span class="badge bg-secondary"><?= count($vendors) ?> Vendors</span>
+    </div>
+    <div class="card-body p-0">
         <?php if (empty($vendors)): ?>
-            <p class="text-muted">No vendors registered yet.</p>
+            <p class="text-muted text-center py-4">No vendors registered yet.</p>
         <?php else: ?>
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-dark">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
                             <th>Logo</th>
-                            <th>Store Name</th>
-                            <th>Username</th>
+                            <th>Store Details</th>
                             <th>WhatsApp</th>
                             <th>Status</th>
-                            <th>Account</th>
-                            <th>Actions</th>
+                            <th>Account Status</th>
+                            <th>Menu Metrics</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($vendors as $v): ?>
+                            <?php 
+                                $vendorMenuRate = $v['total_items'] > 0 
+                                    ? round(($v['available_items'] / $v['total_items']) * 100) 
+                                    : 0;
+                            ?>
                             <tr>
                                 <td>
-                                    <img src="../uploads/vendors/<?= htmlspecialchars($v['logo'] ?: 'default_logo.png') ?>" width="40" height="40" class="rounded-circle object-fit-cover" alt="">
+                                    <img src="../uploads/vendors/<?= htmlspecialchars($v['logo'] ?: 'default_logo.png') ?>" 
+                                         width="45" height="45" class="rounded-circle object-fit-cover shadow-sm" alt="">
                                 </td>
-                                <td class="fw-semibold"><?= htmlspecialchars($v['store_name']) ?></td>
-                                <td><?= htmlspecialchars($v['username']) ?></td>
-                                <td><?= htmlspecialchars($v['whatsapp_number']) ?></td>
+                                <td>
+                                    <span class="fw-bold d-block text-dark"><?= htmlspecialchars($v['store_name']) ?></span>
+                                    <small class="text-muted"><i class="fa-solid fa-user me-1"></i><?= htmlspecialchars($v['username']) ?></small>
+                                </td>
+                                <td>
+                                    <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $v['whatsapp_number']) ?>" 
+                                       target="_blank" class="text-decoration-none text-success fw-semibold small">
+                                        <i class="fa-brands fa-whatsapp me-1 fs-6"></i><?= htmlspecialchars($v['whatsapp_number']) ?>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-success">$<?= number_format($v['total_revenue'], 2) ?></span>
+                                    <br><small class="text-muted"><?= $v['total_orders'] ?> Orders Placed</small>
+                                </td>
                                 <td>
                                     <?php if ($v['status'] === 'open'): ?>
-                                        <span class="badge bg-success">Open</span>
+                                        <span class="badge bg-success"><i class="fa-solid fa-door-open me-1"></i>Open</span>
                                     <?php else: ?>
-                                        <span class="badge bg-danger">Closed</span>
+                                        <span class="badge bg-danger"><i class="fa-solid fa-door-closed me-1"></i>Closed</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -61,8 +212,24 @@ $vendors = $stmt->fetchAll();
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <a href="edit_vendor.php?id=<?= $v['id'] ?>" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
-                                    <a href="delete_vendor.php?id=<?= $v['id'] ?>" class="btn btn-sm btn-outline-danger btn-delete"><i class="fa-solid fa-trash"></i></a>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-2 fw-bold small text-secondary">
+                                            <?= $v['total_items'] ?> Items (<?= $vendorMenuRate ?>% Avail.)
+                                        </div>
+                                    </div>
+                                    <div class="progress" style="height: 6px; width: 140px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: <?= $vendorMenuRate ?>%" 
+                                             aria-valuenow="<?= $vendorMenuRate ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <a href="edit_vendor.php?id=<?= $v['id'] ?>" class="btn btn-sm btn-outline-primary" title="Edit Vendor">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <a href="delete_vendor.php?id=<?= $v['id'] ?>" class="btn btn-sm btn-outline-danger btn-delete" title="Delete Vendor">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

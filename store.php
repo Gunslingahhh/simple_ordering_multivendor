@@ -194,27 +194,90 @@ if (orderBtn) {
     orderBtn.addEventListener('click', function() {
         if (cart.length === 0) return;
 
-        const customerName = document.getElementById('customer-name').value.trim();
+        const customerName = document.getElementById('customer-name').value.trim() || 'Guest';
         let message = `Hello *${vendorName}*, I would like to place an order:\n\n`;
-        if (customerName) {
+        if (customerName !== 'Guest') {
             message += `*Customer Name:* ${customerName}\n`;
         }
         message += `--------------------------------\n`;
 
         let total = 0;
+        let receiptItemsHtml = '';
+        
         cart.forEach(item => {
             let subtotal = item.price * item.quantity;
             total += subtotal;
             message += `• ${item.name} x ${item.quantity} - $${subtotal.toFixed(2)}\n`;
+            
+            receiptItemsHtml += `
+                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                    <div>
+                        <h6 class="mb-0">${item.name}</h6>
+                        <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
+                    </div>
+                    <span class="fw-bold">$${subtotal.toFixed(2)}</span>
+                </li>
+            `;
         });
 
         message += `--------------------------------\n`;
         message += `*Total Amount:* $${total.toFixed(2)}\n\n`;
         message += `Please confirm my order. Thank you!`;
 
+        // 1. Send data to backend to record revenue and deduct stock
+        const formData = new FormData();
+        formData.append('vendor_id', <?= $vendor_id ?>);
+        formData.append('customer_name', customerName);
+        formData.append('total_amount', total);
+        formData.append('cart_items', JSON.stringify(cart));
+
+        fetch('log_order.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        // 2. Open WhatsApp in a new tab
         const encodedMessage = encodeURIComponent(message);
         const whatsappURL = `https://wa.me/${vendorWhatsApp}?text=${encodedMessage}`;
         window.open(whatsappURL, '_blank');
+
+        // 3. Transform the current page into a Receipt View
+        const mainContainer = document.querySelector('main.container');
+        mainContainer.innerHTML = `
+            <div class="row justify-content-center">
+                <div class="col-md-7">
+                    <div class="card shadow-sm border-success">
+                        <div class="card-header bg-success text-white text-center py-3">
+                            <i class="fa-solid fa-circle-check fs-1 mb-2"></i>
+                            <h3 class="fw-bold mb-0">Order Sent Successfully!</h3>
+                            <p class="mb-0 small">Your order has been submitted to <strong>${vendorName}</strong> via WhatsApp.</p>
+                        </div>
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-receipt me-2"></i>Order Receipt</h5>
+                            <p class="mb-1 text-muted"><strong>Customer Name:</strong> ${customerName}</p>
+                            <p class="mb-3 text-muted"><strong>Vendor:</strong> ${vendorName}</p>
+                            <hr>
+                            <ul class="list-group list-group-flush mb-3">
+                                ${receiptItemsHtml}
+                            </ul>
+                            <hr>
+                            <div class="d-flex justify-content-between mb-4 fw-bold fs-4">
+                                <span>Total Paid:</span>
+                                <span class="text-success">$${total.toFixed(2)}</span>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a href="store.php?id=<?= $vendor_id ?>" class="btn btn-dark fw-bold">
+                                    <i class="fa-solid fa-arrow-left me-2"></i> Back to Store Menu
+                                </a>
+                                <a href="index.php" class="btn btn-outline-secondary">
+                                    Browse Other Vendors
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     });
 }
 </script>
