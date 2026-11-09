@@ -39,7 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="col-md-5">
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <h3 class="text-center mb-4 fw-bold"><i class="fa-solid fa-right-to-bracket text-warning me-2"></i>System Login</h3>
+                <h3 class="text-center mb-4 fw-bold text-dark">
+                    <i class="fa-solid fa-right-to-bracket me-2" style="color: #2e7d32;"></i>
+                    <span style="color: #2e7d32;">System Login</span>
+                </h3>
                 
                 <?php if ($error): ?>
                     <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>

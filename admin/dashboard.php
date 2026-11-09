@@ -50,6 +50,11 @@ $stmtVendors = $pdo->query("
     ORDER BY total_revenue DESC
 ");
 $vendors = $stmtVendors->fetchAll();
+
+// Base URL helper
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'];
+$baseUrl = "$protocol://$host/simple_ordering_multivendor/index.php?token=";
 ?>
 <?php require_once '../includes/header.php'; ?>
 
@@ -166,8 +171,8 @@ $vendors = $stmtVendors->fetchAll();
                             <th>Store Details</th>
                             <th>WhatsApp</th>
                             <th>Total Revenue</th>
+                            <th>Store Link & QR</th>
                             <th>Status</th>
-                            <th>Account Status</th>
                             <th>Menu Metrics</th>
                             <th class="text-center">Actions</th>
                         </tr>
@@ -178,6 +183,8 @@ $vendors = $stmtVendors->fetchAll();
                                 $vendorMenuRate = $v['total_items'] > 0 
                                     ? round(($v['available_items'] / $v['total_items']) * 100) 
                                     : 0;
+                                $storeLink = $baseUrl . $v['token'];
+                                $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($storeLink);
                             ?>
                             <tr>
                                 <td>
@@ -197,6 +204,37 @@ $vendors = $stmtVendors->fetchAll();
                                 <td>
                                     <span class="fw-bold text-success">RM<?= number_format($v['total_revenue'], 2) ?></span>
                                     <br><small class="text-muted"><?= $v['total_orders'] ?> Orders Placed</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="<?= htmlspecialchars($storeLink) ?>" target="_blank" class="btn btn-sm btn-outline-dark" title="Open Menu Link">
+                                            <i class="fa-solid fa-link"></i>
+                                        </a>
+                                        <!-- Button trigger modal for QR -->
+                                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#qrModal<?= $v['id'] ?>" title="View QR Code">
+                                            <i class="fa-solid fa-qrcode"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- QR Code Modal for each vendor -->
+                                    <div class="modal fade" id="qrModal<?= $v['id'] ?>" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-sm">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-dark text-white py-2">
+                                                    <h6 class="modal-title fw-bold"><?= htmlspecialchars($v['store_name']) ?> QR</h6>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body text-center p-4">
+                                                    <div class="bg-light p-3 rounded mb-3 border">
+                                                        <img src="<?= $qrCodeUrl ?>" alt="QR Code" width="150" height="150" class="img-fluid">
+                                                    </div>
+                                                    <a href="<?= $qrCodeUrl ?>" download="<?= htmlspecialchars($v['store_name']) ?>_QR.png" target="_blank" class="btn btn-sm btn-success w-100 fw-bold">
+                                                        <i class="fa-solid fa-download me-1"></i> Download QR
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <?php if ($v['status'] === 'open'): ?>

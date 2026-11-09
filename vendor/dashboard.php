@@ -22,6 +22,11 @@ if (!$vendor) {
 
 $vendor_id = $vendor['id'];
 
+// Construct the secure special link using the vendor's token
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'];
+$specialLink = "$protocol://$host/simple_ordering_multivendor/index.php?token=" . $vendor['token'];
+
 // Handle profile update
 $error = '';
 $success = '';
@@ -76,22 +81,59 @@ $menu_items = $stmtMenu->fetchAll();
 <?php require_once '../includes/header.php'; ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-secondary"><i class="fa-solid fa-store me-2 text-warning"></i>Vendor Dashboard: <?= htmlspecialchars($vendor['store_name']) ?></h2>
+    <h2 class="fw-bold text-secondary"><i class="fa-solid fa-store me-2" style="color: #2e7d32;"></i>Vendor Dashboard: <?= htmlspecialchars($vendor['store_name']) ?></h2>
     <div>
-        <a href="../store.php?id=<?= $vendor_id ?>" target="_blank" class="btn btn-outline-dark me-2"><i class="fa-solid fa-eye me-1"></i> View My Store</a>
+        <a href="<?= htmlspecialchars($specialLink) ?>" target="_blank" class="btn btn-outline-dark me-2">
+            <i class="fa-solid fa-eye me-1"></i> View My Store
+        </a>
     </div>
 </div>
 
 <?php if ($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 <?php if ($success): ?><div class="alert alert-success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
 
+<!-- ==================================================== -->
+<!-- SPECIAL STORE LINK & QR CODE CARD                    -->
+<!-- ==================================================== -->
+<div class="card shadow-sm mb-4 border-0 border-start border-4" style="border-color: #b2ff81 !important;">
+    <div class="card-body bg-white rounded p-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h5 class="fw-bold mb-2 text-dark"><i class="fa-solid fa-link me-2 text-success"></i>Your Secure Store Link & QR Code</h5>
+                <p class="text-muted small mb-3">Share this unguessable link or print the QR code for your physical stall or tables so customers can scan and order directly.</p>
+                
+                <div class="input-group input-group-sm mb-3">
+                    <input type="text" class="form-control font-monospace" value="<?= htmlspecialchars($specialLink) ?>" id="storeLinkInput" readonly>
+                    <button class="btn btn-dark" type="button" onclick="navigator.clipboard.writeText(document.getElementById('storeLinkInput').value); alert('Store link copied to clipboard!');">
+                        <i class="fa-solid fa-copy me-1"></i> Copy Link
+                    </button>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center border-start-lg">
+                <?php 
+                    // Generate QR Code URL via public QR API
+                    $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($specialLink);
+                ?>
+                <div class="p-2 bg-light d-inline-block rounded shadow-sm border">
+                    <img src="<?= $qrCodeUrl ?>" alt="Store QR Code" width="120" height="120" class="img-fluid">
+                </div>
+                <div class="mt-2">
+                    <a href="<?= $qrCodeUrl ?>" download="<?= htmlspecialchars($vendor['store_name']) ?>_QRCode.png" target="_blank" class="btn btn-sm btn-success fw-bold">
+                        <i class="fa-solid fa-download me-1"></i> Download QR Code
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Tabs Navigation -->
 <ul class="nav nav-tabs mb-4" id="vendorTabs" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link active fw-bold" id="menu-tab" data-bs-toggle="tab" data-bs-target="#menu-pane" type="button" role="tab">Menu Items</button>
+        <button class="nav-link active fw-bold text-dark" id="menu-tab" data-bs-toggle="tab" data-bs-target="#menu-pane" type="button" role="tab">Menu Items</button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link fw-bold" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile-pane" type="button" role="tab">Store Profile</button>
+        <button class="nav-link fw-bold text-dark" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile-pane" type="button" role="tab">Store Profile</button>
     </li>
 </ul>
 
@@ -100,7 +142,9 @@ $menu_items = $stmtMenu->fetchAll();
     <div class="tab-pane fade show active" id="menu-pane" role="tabpanel">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="fw-bold text-secondary">Manage Menu Items</h4>
-            <a href="add_item.php" class="btn btn-warning fw-bold"><i class="fa-solid fa-plus me-1"></i> Add New Item</a>
+            <a href="add_item.php" class="btn btn-main fw-bold shadow-sm" style="background-color: #b2ff81; color: #1a1a1a;">
+                <i class="fa-solid fa-plus me-1"></i> Add New Item
+            </a>
         </div>
 
         <?php if (empty($menu_items)): ?>
@@ -152,8 +196,8 @@ $menu_items = $stmtMenu->fetchAll();
 
     <!-- Profile Pane -->
     <div class="tab-pane fade" id="profile-pane" role="tabpanel">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4 bg-white rounded">
                 <h4 class="fw-bold mb-3">Store Profile Management</h4>
                 <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
@@ -195,7 +239,7 @@ $menu_items = $stmtMenu->fetchAll();
                             <input type="file" name="logo" class="form-control">
                         </div>
                     </div>
-                    <button type="submit" name="update_profile" class="btn btn-dark w-100 fw-bold">Save Profile Changes</button>
+                    <button type="submit" name="update_profile" class="btn btn-dark w-100 fw-bold shadow-sm">Save Profile Changes</button>
                 </form>
             </div>
         </div>
