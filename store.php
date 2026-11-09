@@ -2,20 +2,23 @@
 require_once 'config/db.php';
 require_once 'includes/header.php';
 
-$vendor_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+// Capture the secure token parameter from the URL instead of numeric ID
+$vendor_token = isset($_GET['token']) ? trim($_GET['token']) : '';
 
-// Fetch vendor details
-$stmt = $pdo->prepare("SELECT * FROM vendors WHERE id = ? AND is_active = 1");
-$stmt->execute([$vendor_id]);
+// Fetch vendor details by secure token and ensure active
+$stmt = $pdo->prepare("SELECT * FROM vendors WHERE token = ? AND is_active = 1");
+$stmt->execute([$vendor_token]);
 $vendor = $stmt->fetch();
 
 if (!$vendor) {
-    echo '<div class="alert alert-danger">Vendor not found or inactive.</div>';
+    echo '<div class="alert alert-danger mt-4 text-center"><h4>Store not found or link is invalid.</h4><p class="mb-0">Please check the store link and try again.</p></div>';
     require_once 'includes/footer.php';
     exit;
 }
 
-// Fetch menu items for this vendor
+$vendor_id = $vendor['id'];
+
+// Fetch ONLY this vendor's menu items
 $stmtMenu = $pdo->prepare("SELECT * FROM menu_items WHERE vendor_id = ? AND is_available = 1 AND stock > 0 ORDER BY name ASC");
 $stmtMenu->execute([$vendor_id]);
 $menu_items = $stmtMenu->fetchAll();

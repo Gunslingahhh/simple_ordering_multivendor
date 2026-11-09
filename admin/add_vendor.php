@@ -20,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $whatsapp_number = trim($_POST['whatsapp_number']);
     $is_active = isset($_POST['is_active']) ? 1 : 0;
 
+    // Generate a unique unguessable secure token
+    $token = bin2hex(random_bytes(16)); // e.g. "4a6f9c2d1e... "
+
     if (!empty($username) && !empty($password) && !empty($store_name) && !empty($whatsapp_number)) {
         // Handle logo upload
         $logo = 'default_logo.png';
@@ -54,9 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtUser->execute([$username, $hashed]);
                 $userId = $pdo->lastInsertId();
 
-                // Insert into vendors
-                $stmtVendor = $pdo->prepare("INSERT INTO vendors (user_id, store_name, description, address, contact_number, whatsapp_number, logo, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmtVendor->execute([$userId, $store_name, $description, $address, $contact_number, $whatsapp_number, $logo, $is_active]);
+                // Update your insert statement for the vendors table
+                $stmtVendor = $pdo->prepare("INSERT INTO vendors (token, user_id, store_name, description, address, contact_number, whatsapp_number, logo, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmtVendor->execute([$token, $userId, $store_name, $description, $address, $contact_number, $whatsapp_number, $logo, $is_active]);
 
                 $pdo->commit();
                 header('Location: dashboard.php');

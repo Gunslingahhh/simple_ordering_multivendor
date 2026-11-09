@@ -28,9 +28,6 @@ if (session_status() === PHP_SESSION_NONE) {
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/simple_ordering_multivendor/index.php"><i class="fa-solid fa-store me-1"></i> Browse Vendors</a>
-                    </li>
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <?php if ($_SESSION['role'] === 'admin'): ?>
                             <li class="nav-item"><a class="nav-link" href="/simple_ordering_multivendor/admin/dashboard.php">Admin Dashboard</a></li>

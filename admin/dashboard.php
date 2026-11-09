@@ -51,6 +51,23 @@ $stmtVendors = $pdo->query("
 ");
 $vendors = $stmtVendors->fetchAll();
 ?>
+<?php 
+// Construct the vendor's unique special link
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'];
+$specialLink = "$protocol://$host/simple_ordering_multivendor/store.php?token=" . $vendor['token'];
+?>
+
+<div class="alert alert-secondary mb-4">
+    <h6 class="fw-bold mb-1"><i class="fa-solid fa-link me-2 text-warning"></i>Your Special Store Link</h6>
+    <p class="small text-muted mb-2">Share this exact link with your customers on WhatsApp, Instagram, or social media. It cannot be guessed by outsiders:</p>
+    <div class="input-group input-group-sm">
+        <input type="text" class="form-control font-monospace" value="<?= htmlspecialchars($specialLink) ?>" id="storeLinkInput" readonly>
+        <button class="btn btn-dark" type="button" onclick="navigator.clipboard.writeText(document.getElementById('storeLinkInput').value); alert('Link copied to clipboard!');">
+            <i class="fa-solid fa-copy me-1"></i> Copy Link
+        </button>
+    </div>
+</div>
 <?php require_once '../includes/header.php'; ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
