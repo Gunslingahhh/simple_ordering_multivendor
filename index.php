@@ -88,61 +88,148 @@ if (!empty($vendor_token)) {
             <?php endif; ?>
         </div>
 
-        <!-- Order Summary & Delivery Column -->
+        <!-- Order Summary & Delivery Column (Desktop Sidebar & Mobile Modal Trigger) -->
         <div class="col-lg-4">
-            <div class="card shadow-sm sticky-top border-0" style="top: 2rem;">
-                <div class="card-header bg-dark text-white py-3">
-                    <h5 class="mb-0"><i class="fa-solid fa-receipt me-2" style="color: #b2ff81;"></i>Order Summary</h5>
-                </div>
-                <div class="card-body bg-white border border-top-0 rounded-bottom">
-                    <div id="cart-items" class="mb-3">
-                        <p class="text-muted text-center py-3">Your order is empty.</p>
+            
+            <!-- DESKTOP SIDEBAR VIEW (Visible on large screens) -->
+            <div class="d-none d-lg-block">
+                <div class="card shadow-sm sticky-top border-0" style="top: 2rem;">
+                    <div class="card-header bg-dark text-white py-3">
+                        <h5 class="mb-0"><i class="fa-solid fa-receipt me-2" style="color: #b2ff81;"></i>Order Summary</h5>
                     </div>
-                    <hr>
-                    <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
-                        <span>Total:</span>
-                        <span id="cart-total" class="text-success">RM0.00</span>
-                    </div>
-                    
-                    <div class="mb-2">
-                        <label for="customer-name" class="form-label fw-semibold small">Your Name *</label>
-                        <input type="text" id="customer-name" class="form-control form-control-sm" placeholder="e.g., John Doe" required>
-                    </div>
-
-                    <div class="mb-2">
-                        <label for="customer-phone" class="form-label fw-semibold small">Phone Number *</label>
-                        <input type="tel" id="customer-phone" class="form-control form-control-sm" placeholder="e.g., +1234567890" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Order Type *</label>
-                        <select id="order-type" class="form-select form-select-sm">
-                            <option value="delivery">Delivery</option>
-                            <option value="pickup">Self Pickup</option>
-                        </select>
-                    </div>
-
-                    <div id="delivery-address-section" class="mb-3">
-                        <label for="customer-address" class="form-label fw-semibold small">Delivery Address *</label>
-                        <textarea id="customer-address" class="form-control form-control-sm" rows="2" placeholder="Street address, apartment, etc."></textarea>
-                        
-                        <div class="mt-2">
-                            <button type="button" id="get-location-btn" class="btn btn-outline-dark btn-sm w-100">
-                                <i class="fa-solid fa-map-pin me-1 text-success"></i> Use Google Maps Pin Location
-                            </button>
-                            <input type="hidden" id="maps-pin-url" value="">
+                    <div class="card-body bg-white border border-top-0 rounded-bottom">
+                        <!-- Reusable Cart Content Container -->
+                        <div class="cart-items-container mb-3">
+                            <p class="text-muted text-center py-3">Your order is empty.</p>
                         </div>
-                    </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
+                            <span>Total:</span>
+                            <span class="cart-total-display text-success">$0.00</span>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small">Your Name *</label>
+                            <input type="text" class="form-control form-control-sm customer-name-input" placeholder="e.g., John Doe" required>
+                        </div>
 
-                    <?php if ($vendor['status'] === 'open'): ?>
-                        <button id="whatsapp-order-btn" class="btn btn-success w-100 fw-bold py-2 shadow-sm" disabled>
-                            <i class="fa-brands fa-whatsapp me-2 fs-5"></i> Submit Order via WhatsApp
-                        </button>
-                    <?php else: ?>
-                        <button class="btn btn-secondary w-100 fw-bold py-2" disabled>Vendor is Closed</button>
-                    <?php endif; ?>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small">Phone Number *</label>
+                            <input type="tel" class="form-control form-control-sm customer-phone-input" placeholder="e.g., +1234567890" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Order Type *</label>
+                            <select class="form-select form-select-sm order-type-select">
+                                <option value="delivery">Delivery</option>
+                                <option value="pickup">Self Pickup</option>
+                            </select>
+                        </div>
+
+                        <div class="delivery-address-section mb-3">
+                            <label class="form-label fw-semibold small">Delivery Address *</label>
+                            <textarea class="form-control form-control-sm customer-address-input" rows="2" placeholder="Street address, apartment, etc."></textarea>
+                            
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-outline-dark btn-sm w-100 get-location-btn">
+                                    <i class="fa-solid fa-map-pin me-1 text-success"></i> Use Google Maps Pin Location
+                                </button>
+                                <input type="hidden" class="maps-pin-url-input" value="">
+                            </div>
+                        </div>
+
+                        <?php if ($vendor['status'] === 'open'): ?>
+                            <button class="btn btn-success w-100 fw-bold py-2 shadow-sm whatsapp-order-btn" disabled>
+                                <i class="fa-brands fa-whatsapp me-2 fs-5"></i> Submit Order via WhatsApp
+                            </button>
+                        <?php else: ?>
+                            <button class="btn btn-secondary w-100 fw-bold py-2" disabled>Vendor is Closed</button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
+
+            <!-- MOBILE FLOATING CART BUTTON (Visible only on mobile/tablet) -->
+            <?php if ($vendor['status'] === 'open'): ?>
+                <div class="d-lg-none fixed-bottom p-3 bg-white border-top shadow-lg" style="z-index: 1040;">
+                    <button type="button" class="btn btn-dark w-100 py-3 fw-bold d-flex justify-content-between align-items-center px-4 rounded-pill shadow" data-bs-toggle="modal" data-bs-target="#mobileCartModal" style="background-color: #1e293b; color: #ffffff;">
+                        <div>
+                            <i class="fa-solid fa-cart-shopping me-2 text-warning"></i>
+                            <span id="mobile-cart-count" class="badge bg-success rounded-pill me-1">0</span> Items
+                        </div>
+                        <div>
+                            <span id="mobile-cart-total" class="text-success fw-bold me-2">$0.00</span>
+                            <span class="badge px-3 py-2" style="background-color: #b2ff81; color: #1a1a1a;">View Cart <i class="fa-solid fa-chevron-up ms-1"></i></span>
+                        </div>
+                    </button>
+                </div>
+            <?php endif; ?>
+
+            <!-- MOBILE CART MODAL -->
+            <div class="modal fade" id="mobileCartModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg">
+                        <div class="modal-header bg-dark text-white py-3">
+                            <h5 class="modal-title fw-bold">
+                                <i class="fa-solid fa-receipt me-2" style="color: #b2ff81;"></i>Your Order Summary
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body bg-light p-4">
+                            <!-- Reusable Cart Content Container -->
+                            <div class="cart-items-container mb-3 bg-white p-3 rounded shadow-sm">
+                                <p class="text-muted text-center py-3">Your order is empty.</p>
+                            </div>
+                            
+                            <div class="bg-white p-3 rounded shadow-sm mb-3">
+                                <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
+                                    <span>Total:</span>
+                                    <span class="cart-total-display text-success">$0.00</span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <label class="form-label fw-semibold small">Your Name *</label>
+                                    <input type="text" class="form-control form-control-sm customer-name-input" placeholder="e.g., John Doe" required>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label fw-semibold small">Phone Number *</label>
+                                    <input type="tel" class="form-control form-control-sm customer-phone-input" placeholder="e.g., +1234567890" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold small">Order Type *</label>
+                                    <select class="form-select form-select-sm order-type-select">
+                                        <option value="delivery">Delivery</option>
+                                        <option value="pickup">Self Pickup</option>
+                                    </select>
+                                </div>
+
+                                <div class="delivery-address-section mb-3">
+                                    <label class="form-label fw-semibold small">Delivery Address *</label>
+                                    <textarea class="form-control form-control-sm customer-address-input" rows="2" placeholder="Street address, apartment, etc."></textarea>
+                                    
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-outline-dark btn-sm w-100 get-location-btn">
+                                            <i class="fa-solid fa-map-pin me-1 text-success"></i> Use Google Maps Pin Location
+                                        </button>
+                                        <input type="hidden" class="maps-pin-url-input" value="">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <?php if ($vendor['status'] === 'open'): ?>
+                                <button class="btn btn-success w-100 fw-bold py-3 shadow-sm whatsapp-order-btn" disabled>
+                                    <i class="fa-brands fa-whatsapp me-2 fs-5"></i> Submit Order via WhatsApp
+                                </button>
+                            <?php else: ?>
+                                <button class="btn btn-secondary w-100 fw-bold py-2" disabled>Vendor is Closed</button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -170,21 +257,29 @@ if (!empty($vendor_token)) {
             if (existing) {
                 existing.quantity += 1;
             } else {
-                cart.push({ id, name, price, quantity: 1, maxStock });
+                cart.push({ id, name, price, quantity: 1, maxStock, remark: '' });
             }
             updateCartUI();
         });
     });
 
     function updateCartUI() {
-        const cartContainer = document.getElementById('cart-items');
-        const cartTotalEl = document.getElementById('cart-total');
-        const orderBtn = document.getElementById('whatsapp-order-btn');
+        const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const mobileCountEl = document.getElementById('mobile-cart-count');
+        const mobileTotalEl = document.getElementById('mobile-cart-total');
+        
+        if (mobileCountEl) mobileCountEl.textContent = totalItemsCount;
 
         if (cart.length === 0) {
-            cartContainer.innerHTML = '<p class="text-muted text-center py-3">Your order is empty.</p>';
-            cartTotalEl.textContent = 'RM0.00';
-            if (orderBtn) orderBtn.disabled = true;
+            document.querySelectorAll('.cart-items-container').forEach(el => {
+                el.innerHTML = '<p class="text-muted text-center py-3">Your order is empty.</p>';
+            });
+            document.querySelectorAll('.cart-total-display').forEach(el => {
+                el.textContent = '$0.00';
+            });
+            if (mobileTotalEl) mobileTotalEl.textContent = '$0.00';
+            
+            document.querySelectorAll('.whatsapp-order-btn').forEach(btn => btn.disabled = true);
             return;
         }
 
@@ -201,21 +296,19 @@ if (!empty($vendor_token)) {
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <div>
                             <h6 class="mb-0 fw-bold">${item.name}</h6>
-                            <small class="text-muted">RM${item.price.toFixed(2)} x ${item.quantity}</small>
+                            <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
                         </div>
                         <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-secondary" onclick="changeQty(${index}, -1)">-</button>
-                            <button class="btn btn-outline-secondary" onclick="changeQty(${index}, 1)">+</button>
-                            <button class="btn btn-outline-danger" onclick="removeItem(${index})"><i class="fa-solid fa-trash"></i></button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="changeQty(${index}, -1)">-</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="changeQty(${index}, 1)">+</button>
+                            <button type="button" class="btn btn-outline-danger" onclick="removeItem(${index})"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                    <!-- Remarks Input Field for Each Item -->
                     <div class="mt-1">
                         <input type="text" 
                             class="form-control form-control-sm bg-light" 
-                            placeholder="Add remarks (e.g. Less spicy, no ice)" 
+                            placeholder="Add remarks (e.g. Less spicy)" 
                             value="${remarkVal}"
-                            onchange="updateRemark(${index}, this.value)"
                             oninput="updateRemark(${index}, this.value)">
                     </div>
                 </li>
@@ -223,12 +316,18 @@ if (!empty($vendor_token)) {
         });
 
         html += '</ul>';
-        cartContainer.innerHTML = html;
-        cartTotalEl.textContent = 'RM' + total.toFixed(2);
-        if (orderBtn) orderBtn.disabled = false;
+
+        document.querySelectorAll('.cart-items-container').forEach(el => {
+            el.innerHTML = html;
+        });
+        document.querySelectorAll('.cart-total-display').forEach(el => {
+            el.textContent = '$' + total.toFixed(2);
+        });
+        if (mobileTotalEl) mobileTotalEl.textContent = '$' + total.toFixed(2);
+
+        document.querySelectorAll('.whatsapp-order-btn').forEach(btn => btn.disabled = false);
     }
 
-    // Function to update the remark string in the cart array
     function updateRemark(index, text) {
         if (cart[index]) {
             cart[index].remark = text.trim();
@@ -248,68 +347,84 @@ if (!empty($vendor_token)) {
         updateCartUI();
     }
 
-    document.getElementById('order-type').addEventListener('change', function() {
-        const addressSection = document.getElementById('delivery-address-section');
-        if (this.value === 'pickup') {
-            addressSection.style.display = 'none';
-        } else {
-            addressSection.style.display = 'block';
-        }
+    // Handle Order Type Toggle for both Desktop and Mobile views
+    document.querySelectorAll('.order-type-select').forEach(selectElem => {
+        selectElem.addEventListener('change', function() {
+            const orderTypeVal = this.value;
+            document.querySelectorAll('.delivery-address-section').forEach(section => {
+                section.style.display = (orderTypeVal === 'pickup') ? 'none' : 'block';
+            });
+        });
     });
 
-    document.getElementById('get-location-btn').addEventListener('click', function() {
-        const btn = this;
-        const addressInput = document.getElementById('customer-address');
-        
-        if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser');
-            return;
-        }
+    // Geolocation button handlers
+    document.querySelectorAll('.get-location-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const button = this;
+            
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser');
+                return;
+            }
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Getting Location...';
+            button.disabled = true;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Getting Location...';
 
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                const mapsUrl = `https://www.maps.google.com/?q=${lat},${lng}`;
-                
-                addressInput.value = `Google Maps Pin Location:\n${mapsUrl}`;
-                document.getElementById('maps-pin-url').value = mapsUrl;
-                
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> Location Pinned Successfully!';
-            },
-            function(error) {
-                alert('Unable to retrieve your location. Please enter your address manually.');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-map-pin me-1"></i> Use Google Maps Pin Location';
-            },
-            { timeout: 10000, enableHighAccuracy: true }
-        );
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const mapsUrl = `https://www.maps.google.com/?q=${lat},${lng}`;
+                    
+                    document.querySelectorAll('.customer-address-input').forEach(textarea => {
+                        textarea.value = `Google Maps Pin Location:\n${mapsUrl}`;
+                    });
+                    document.querySelectorAll('.maps-pin-url-input').forEach(input => {
+                        input.value = mapsUrl;
+                    });
+                    
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> Location Pinned Successfully!';
+                },
+                function(error) {
+                    alert('Unable to retrieve your location. Please enter your address manually.');
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fa-solid fa-map-pin me-1 text-success"></i> Use Google Maps Pin Location';
+                },
+                { timeout: 10000, enableHighAccuracy: true }
+            );
+        });
     });
 
-    const orderBtn = document.getElementById('whatsapp-order-btn');
-    if (orderBtn) {
-        orderBtn.addEventListener('click', function() {
+    // WhatsApp Order Submit Handlers
+    document.querySelectorAll('.whatsapp-order-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
             if (cart.length === 0) return;
 
-            const customerName = document.getElementById('customer-name').value.trim();
-            const customerPhone = document.getElementById('customer-phone').value.trim();
-            const orderType = document.getElementById('order-type').value;
-            const customerAddress = document.getElementById('customer-address').value.trim();
+            // Grab values from whichever form context is currently active (Desktop sidebar or Mobile modal)
+            const activeContainer = this.closest('.card-body') || this.closest('.modal-body');
+            const customerName = activeContainer.querySelector('.customer-name-input').value.trim();
+            const customerPhone = activeContainer.querySelector('.customer-phone-input').value.trim();
+            const orderType = activeContainer.querySelector('.order-type-select').value;
+            const customerAddress = activeContainer.querySelector('.customer-address-input').value.trim();
 
             if (!customerName || !customerPhone) {
                 alert('Please enter your name and phone number.');
-                document.getElementById('customer-name').focus();
+                activeContainer.querySelector('.customer-name-input').focus();
                 return;
             }
 
             if (orderType === 'delivery' && !customerAddress) {
                 alert('Please provide a delivery address or use the Google Maps pin feature.');
-                document.getElementById('customer-address').focus();
+                activeContainer.querySelector('.customer-address-input').focus();
                 return;
+            }
+
+            // Close mobile modal if open
+            const mobileModalEl = document.getElementById('mobileCartModal');
+            if (mobileModalEl) {
+                const modalInstance = bootstrap.Modal.getInstance(mobileModalEl);
+                if (modalInstance) modalInstance.hide();
             }
 
             let message = `Hello *${vendorName}*, I would like to place an *${orderType.toUpperCase()}* order:\n\n`;
@@ -329,8 +444,7 @@ if (!empty($vendor_token)) {
                 let subtotal = item.price * item.quantity;
                 total += subtotal;
 
-                // Format item line with optional remark
-                let itemLine = `• ${item.name} x ${item.quantity} - RM${subtotal.toFixed(2)}`;
+                let itemLine = `• ${item.name} x ${item.quantity} - $${subtotal.toFixed(2)}`;
                 if (item.remark) {
                     itemLine += `\n  _(Note: ${item.remark})_`;
                 }
@@ -340,19 +454,18 @@ if (!empty($vendor_token)) {
                     <li class="list-group-item d-flex justify-content-between align-items-start px-0">
                         <div>
                             <h6 class="mb-0 fw-bold">${item.name}</h6>
-                            <small class="text-muted">RM${item.price.toFixed(2)} x ${item.quantity}</small>
+                            <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
                             ${item.remark ? `<br><small class="text-danger"><em>Note: ${item.remark}</em></small>` : ''}
                         </div>
-                        <span class="fw-bold">RM${subtotal.toFixed(2)}</span>
+                        <span class="fw-bold">$${subtotal.toFixed(2)}</span>
                     </li>
                 `;
             });
 
             message += `--------------------------------\n`;
-            message += `*Total Amount:* RM${total.toFixed(2)}\n\n`;
+            message += `*Total Amount:* $${total.toFixed(2)}\n\n`;
             message += `Please confirm my order. Thank you!`;
 
-            // Log order to backend
             const formData = new FormData();
             formData.append('vendor_id', <?= $vendor_id ?>);
             formData.append('customer_name', `${customerName} (${customerPhone}) - ${orderType.toUpperCase()}`);
@@ -364,12 +477,10 @@ if (!empty($vendor_token)) {
                 body: formData
             });
 
-            // Open WhatsApp
             const encodedMessage = encodeURIComponent(message);
             const whatsappURL = `https://wa.me/${vendorWhatsApp}?text=${encodedMessage}`;
             window.open(whatsappURL, '_blank');
 
-            // Show Receipt Screen
             const mainContainer = document.querySelector('main.container');
             mainContainer.innerHTML = `
                 <div class="row justify-content-center">
@@ -378,7 +489,7 @@ if (!empty($vendor_token)) {
                             <div class="card-header bg-success text-white text-center py-3">
                                 <i class="fa-solid fa-circle-check fs-1 mb-2"></i>
                                 <h3 class="fw-bold mb-0">Order Sent Successfully!</h3>
-                                <p class="mb-0 small">Your order has been submitted to <strong>${vendorName}</strong> via WhatsApp.</p>
+                                <p class="mb-0 small">Your order has5 been submitted to <strong>${vendorName}</strong> via WhatsApp.</p>
                             </div>
                             <div class="card-body p-4">
                                 <h5 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-receipt me-2"></i>Order Receipt</h5>
@@ -394,7 +505,7 @@ if (!empty($vendor_token)) {
                                 <hr>
                                 <div class="d-flex justify-content-between mb-4 fw-bold fs-4">
                                     <span>Total Paid:</span>
-                                    <span class="text-success">RM${total.toFixed(2)}</span>
+                                    <span class="text-success">$${total.toFixed(2)}</span>
                                 </div>
                                 <div class="d-grid gap-2">
                                     <a href="index.php?token=<?= $vendor_token ?>" class="btn btn-dark fw-bold">
@@ -410,7 +521,7 @@ if (!empty($vendor_token)) {
                 </div>
             `;
         });
-    }
+    });
     </script>
 
 <?php 
