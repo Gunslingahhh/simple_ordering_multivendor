@@ -62,7 +62,7 @@ $baseUrl = "$protocol://$host/simple_ordering_multivendor/index.php?token=";
     <h2 class="fw-bold text-secondary">
         <i class="fa-solid fa-chart-line me-2 text-warning"></i>Admin Performance Dashboard
     </h2>
-    <a href="add_vendor.php" class="btn btn-warning fw-bold">
+    <a href="add_vendor.php" class="btn btn-main fw-bold">
         <i class="fa-solid fa-plus me-1"></i> Add New Vendor
     </a>
 </div>

@@ -194,16 +194,29 @@ if (!empty($vendor_token)) {
         cart.forEach((item, index) => {
             let itemTotal = item.price * item.quantity;
             total += itemTotal;
+            const remarkVal = item.remark ? item.remark.replace(/"/g, '&quot;') : '';
+
             html += `
-                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                    <div>
-                        <h6 class="mb-0">${item.name}</h6>
-                        <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
+                <li class="list-group-item px-0 py-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                            <h6 class="mb-0 fw-bold">${item.name}</h6>
+                            <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" onclick="changeQty(${index}, -1)">-</button>
+                            <button class="btn btn-outline-secondary" onclick="changeQty(${index}, 1)">+</button>
+                            <button class="btn btn-outline-danger" onclick="removeItem(${index})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </div>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-secondary" onclick="changeQty(${index}, -1)">-</button>
-                        <button class="btn btn-outline-secondary" onclick="changeQty(${index}, 1)">+</button>
-                        <button class="btn btn-outline-danger" onclick="removeItem(${index})"><i class="fa-solid fa-trash"></i></button>
+                    <!-- Remarks Input Field for Each Item -->
+                    <div class="mt-1">
+                        <input type="text" 
+                            class="form-control form-control-sm bg-light" 
+                            placeholder="Add remarks (e.g. Less spicy, no ice)" 
+                            value="${remarkVal}"
+                            onchange="updateRemark(${index}, this.value)"
+                            oninput="updateRemark(${index}, this.value)">
                     </div>
                 </li>
             `;
@@ -213,6 +226,13 @@ if (!empty($vendor_token)) {
         cartContainer.innerHTML = html;
         cartTotalEl.textContent = '$' + total.toFixed(2);
         if (orderBtn) orderBtn.disabled = false;
+    }
+
+    // Function to update the remark string in the cart array
+    function updateRemark(index, text) {
+        if (cart[index]) {
+            cart[index].remark = text.trim();
+        }
     }
 
     function changeQty(index, delta) {
@@ -308,13 +328,20 @@ if (!empty($vendor_token)) {
             cart.forEach(item => {
                 let subtotal = item.price * item.quantity;
                 total += subtotal;
-                message += `• ${item.name} x ${item.quantity} - $${subtotal.toFixed(2)}\n`;
+
+                // Format item line with optional remark
+                let itemLine = `• ${item.name} x ${item.quantity} - $${subtotal.toFixed(2)}`;
+                if (item.remark) {
+                    itemLine += `\n  _(Note: ${item.remark})_`;
+                }
+                message += `${itemLine}\n`;
                 
                 receiptItemsHtml += `
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                    <li class="list-group-item d-flex justify-content-between align-items-start px-0">
                         <div>
-                            <h6 class="mb-0">${item.name}</h6>
+                            <h6 class="mb-0 fw-bold">${item.name}</h6>
                             <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
+                            ${item.remark ? `<br><small class="text-danger"><em>Note: ${item.remark}</em></small>` : ''}
                         </div>
                         <span class="fw-bold">$${subtotal.toFixed(2)}</span>
                     </li>
@@ -325,6 +352,7 @@ if (!empty($vendor_token)) {
             message += `*Total Amount:* $${total.toFixed(2)}\n\n`;
             message += `Please confirm my order. Thank you!`;
 
+            // Log order to backend
             const formData = new FormData();
             formData.append('vendor_id', <?= $vendor_id ?>);
             formData.append('customer_name', `${customerName} (${customerPhone}) - ${orderType.toUpperCase()}`);
@@ -336,10 +364,12 @@ if (!empty($vendor_token)) {
                 body: formData
             });
 
+            // Open WhatsApp
             const encodedMessage = encodeURIComponent(message);
             const whatsappURL = `https://wa.me/${vendorWhatsApp}?text=${encodedMessage}`;
             window.open(whatsappURL, '_blank');
 
+            // Show Receipt Screen
             const mainContainer = document.querySelector('main.container');
             mainContainer.innerHTML = `
                 <div class="row justify-content-center">
