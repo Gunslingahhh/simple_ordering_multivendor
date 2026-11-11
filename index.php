@@ -67,7 +67,7 @@ if (!empty($vendor_token)) {
                                     <p class="card-text text-muted small flex-grow-1"><?= htmlspecialchars($item['description']) ?></p>
                                     <div class="d-flex justify-content-between align-items-center mt-3">
                                         <div>
-                                            <span class="fw-bold text-success fs-5">$<?= number_format($item['price'], 2) ?></span>
+                                            <span class="fw-bold text-success fs-5">RM<?= number_format($item['price'], 2) ?></span>
                                             <br><small class="text-muted">Stock: <span class="badge bg-secondary"><?= $item['stock'] ?></span></small>
                                         </div>
                                         <?php if ($vendor['status'] === 'open'): ?>
@@ -101,7 +101,7 @@ if (!empty($vendor_token)) {
                     <hr>
                     <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
                         <span>Total:</span>
-                        <span id="cart-total" class="text-success">$0.00</span>
+                        <span id="cart-total" class="text-success">RM0.00</span>
                     </div>
                     
                     <div class="mb-2">
@@ -183,7 +183,7 @@ if (!empty($vendor_token)) {
 
         if (cart.length === 0) {
             cartContainer.innerHTML = '<p class="text-muted text-center py-3">Your order is empty.</p>';
-            cartTotalEl.textContent = '$0.00';
+            cartTotalEl.textContent = 'RM0.00';
             if (orderBtn) orderBtn.disabled = true;
             return;
         }
@@ -201,7 +201,7 @@ if (!empty($vendor_token)) {
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <div>
                             <h6 class="mb-0 fw-bold">${item.name}</h6>
-                            <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
+                            <small class="text-muted">RM${item.price.toFixed(2)} x ${item.quantity}</small>
                         </div>
                         <div class="btn-group btn-group-sm">
                             <button class="btn btn-outline-secondary" onclick="changeQty(${index}, -1)">-</button>
@@ -224,7 +224,7 @@ if (!empty($vendor_token)) {
 
         html += '</ul>';
         cartContainer.innerHTML = html;
-        cartTotalEl.textContent = '$' + total.toFixed(2);
+        cartTotalEl.textContent = 'RM' + total.toFixed(2);
         if (orderBtn) orderBtn.disabled = false;
     }
 
@@ -330,7 +330,7 @@ if (!empty($vendor_token)) {
                 total += subtotal;
 
                 // Format item line with optional remark
-                let itemLine = `• ${item.name} x ${item.quantity} - $${subtotal.toFixed(2)}`;
+                let itemLine = `• ${item.name} x ${item.quantity} - RM${subtotal.toFixed(2)}`;
                 if (item.remark) {
                     itemLine += `\n  _(Note: ${item.remark})_`;
                 }
@@ -340,16 +340,16 @@ if (!empty($vendor_token)) {
                     <li class="list-group-item d-flex justify-content-between align-items-start px-0">
                         <div>
                             <h6 class="mb-0 fw-bold">${item.name}</h6>
-                            <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
+                            <small class="text-muted">RM${item.price.toFixed(2)} x ${item.quantity}</small>
                             ${item.remark ? `<br><small class="text-danger"><em>Note: ${item.remark}</em></small>` : ''}
                         </div>
-                        <span class="fw-bold">$${subtotal.toFixed(2)}</span>
+                        <span class="fw-bold">RM${subtotal.toFixed(2)}</span>
                     </li>
                 `;
             });
 
             message += `--------------------------------\n`;
-            message += `*Total Amount:* $${total.toFixed(2)}\n\n`;
+            message += `*Total Amount:* RM${total.toFixed(2)}\n\n`;
             message += `Please confirm my order. Thank you!`;
 
             // Log order to backend
@@ -394,7 +394,7 @@ if (!empty($vendor_token)) {
                                 <hr>
                                 <div class="d-flex justify-content-between mb-4 fw-bold fs-4">
                                     <span>Total Paid:</span>
-                                    <span class="text-success">$${total.toFixed(2)}</span>
+                                    <span class="text-success">RM${total.toFixed(2)}</span>
                                 </div>
                                 <div class="d-grid gap-2">
                                     <a href="index.php?token=<?= $vendor_token ?>" class="btn btn-dark fw-bold">
