@@ -1,5 +1,5 @@
 /config/db.php
-credential.env
+.env
 /uploads/
 .DS_Store
 Thumbs.db
