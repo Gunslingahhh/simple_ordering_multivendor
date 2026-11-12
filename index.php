@@ -31,53 +31,113 @@ if (!empty($vendor_token)) {
     $menu_items = $stmtMenu->fetchAll();
     ?>
 
-    <!-- Vendor Header Info -->
-    <div class="row mb-4 bg-white p-4 rounded shadow-sm align-items-center border-start border-4 border-success">
-        <div class="col-md-3 text-center">
-            <img src="uploads/vendors/<?= htmlspecialchars($vendor['logo'] ?: 'default_logo.png') ?>" class="img-fluid rounded-circle shadow-sm" width="120" height="120" style="object-fit: cover;" alt="...">
-        </div>
-        <div class="col-md-9">
-            <div class="d-flex align-items-center mb-2">
-                <h1 class="fw-bold mb-0 me-3"><?= htmlspecialchars($vendor['store_name']) ?></h1>
-                <?php if ($vendor['status'] === 'open'): ?>
-                    <span class="badge bg-success fs-6">Open</span>
-                <?php else: ?>
-                    <span class="badge bg-danger fs-6">Closed</span>
-                <?php endif; ?>
+    <!-- 1. HERO BANNER SECTION (Inspired by reference layout) -->
+    <div class="hero-banner p-4 p-md-5 mb-5 shadow-sm">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-6">
+                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill fw-bold mb-3 small">
+                    <i class="fa-solid fa-seedling me-1"></i> FRESHLY MADE, JUST FOR YOU
+                </span>
+                <h1 class="display-4 fw-bold text-dark mb-3" style="line-height: 1.1;">
+                    <?= htmlspecialchars($vendor['store_name']) ?>.
+                </h1>
+                <p class="fs-5 text-muted mb-4">
+                    <?= htmlspecialchars($vendor['description']) ?> Order directly via WhatsApp in a few taps.
+                </p>
+                <div class="d-flex align-items-center text-muted small gap-3 flex-wrap">
+                    <span><i class="fa-solid fa-clock text-success me-1"></i> Made fresh when you order</span>
+                    <span><i class="fa-brands fa-whatsapp text-success me-1"></i> WhatsApp Checkout</span>
+                </div>
             </div>
-            <p class="text-muted mb-1"><?= htmlspecialchars($vendor['description']) ?></p>
-            <p class="text-muted mb-0 small"><i class="fa-solid fa-location-dot me-1 text-success"></i><?= htmlspecialchars($vendor['address']) ?> | <i class="fa-solid fa-phone me-1 text-success"></i><?= htmlspecialchars($vendor['contact_number']) ?></p>
+            <div class="col-lg-6 text-center">
+                <div class="position-relative d-inline-block">
+                    <img src="uploads/vendors/<?= htmlspecialchars($vendor['logo'] ?: 'default_logo.png') ?>" 
+                         class="rounded-4 shadow-sm object-fit-cover" 
+                         width="100%" height="280" style="max-width: 450px;" alt="Store Banner">
+                    <div class="position-absolute bottom-0 start-0 m-3 bg-white p-2 px-3 rounded-pill shadow-sm small fw-bold text-dark">
+                        <?php if ($vendor['status'] === 'open'): ?>
+                            <span class="text-success"><i class="fa-solid fa-circle me-1 small"></i> Store Open</span>
+                        <?php else: ?>
+                            <span class="text-danger"><i class="fa-solid fa-circle me-1 small"></i> Store Closed</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Menu Items Column -->
+    <!-- 2. MENU HEADER, SEARCH & CATEGORIES -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="fw-bold text-dark mb-0">Our menu.</h2>
+            <span class="text-muted small">Fresh picks. Happy plates.</span>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="mb-3">
+            <div class="input-group search-bar-pill bg-white shadow-sm">
+                <span class="input-group-text bg-transparent border-0 pe-2"><i class="fa-solid fa-search text-muted"></i></span>
+                <input type="text" id="menuSearchInput" class="form-control border-0 shadow-none bg-transparent" placeholder="Search your next favourite...">
+                <span class="input-group-text bg-transparent border-0 text-muted small"><i class="fa-solid fa-sliders me-1"></i> <?= count($menu_items) ?> Items</span>
+            </div>
+        </div>
+
+        <!-- Filter Chips (Static examples matching reference design style) -->
+        <div class="d-flex gap-2 overflow-auto pb-2" style="white-space: nowrap;">
+            <button type="button" class="btn category-pill active px-4 py-2 fw-semibold small">
+                <i class="fa-solid fa-utensils me-1"></i> All items
+            </button>
+            <button type="button" class="btn category-pill px-4 py-2 fw-semibold small">
+                <i class="fa-solid fa-bowl-food me-1"></i> Signature Dishes
+            </button>
+            <button type="button" class="btn category-pill px-4 py-2 fw-semibold small">
+                <i class="fa-solid fa-mug-hot me-1"></i> Drinks
+            </button>
+            <button type="button" class="btn category-pill px-4 py-2 fw-semibold small">
+                <i class="fa-solid fa-cookie-bite me-1"></i> Sweet treats
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. MAIN LAYOUT: MENU GRID & ORDER CART -->
+    <div class="row pb-5 mb-5">
+        <!-- Menu Grid Column -->
         <div class="col-lg-8 mb-4">
-            <h3 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-book-open me-2 text-success"></i>Menu Items</h3>
             <?php if (empty($menu_items)): ?>
-                <div class="alert alert-info">No menu items available for this vendor right now.</div>
+                <div class="alert bg-white text-center py-5 shadow-sm rounded-4 border-0">
+                    <i class="fa-solid fa-plate-wheat fs-1 text-muted mb-3"></i>
+                    <h5>No menu items available right now.</h5>
+                    <p class="text-muted mb-0">Please check back later!</p>
+                </div>
             <?php else: ?>
-                <div class="row row-cols-1 row-cols-md-2 g-4">
+                <div class="row row-cols-1 row-cols-md-2 g-4" id="menuItemsGrid">
                     <?php foreach ($menu_items as $item): ?>
-                        <div class="col">
-                            <div class="card h-100 shadow-sm border-0">
-                                <img src="uploads/menu/<?= htmlspecialchars($item['image'] ?: 'default_food.png') ?>" class="card-img-top object-fit-cover" height="160" alt="<?= htmlspecialchars($item['name']) ?>">
-                                <div class="card-body d-flex flex-column">
-                                    <h5 class="card-title fw-bold"><?= htmlspecialchars($item['name']) ?></h5>
-                                    <p class="card-text text-muted small flex-grow-1"><?= htmlspecialchars($item['description']) ?></p>
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <div>
-                                            <span class="fw-bold text-success fs-5">RM<?= number_format($item['price'], 2) ?></span>
-                                            <br><small class="text-muted">Stock: <span class="badge bg-secondary"><?= $item['stock'] ?></span></small>
-                                        </div>
+                        <div class="col menu-item-card" data-name="<?= strtolower(htmlspecialchars($item['name'])) ?>">
+                            <div class="card food-card-modern h-100 d-flex flex-column">
+                                <div class="position-relative">
+                                    <img src="uploads/menu/<?= htmlspecialchars($item['image'] ?: 'default_food.png') ?>" 
+                                         class="card-img-top object-fit-cover" height="200" alt="<?= htmlspecialchars($item['name']) ?>">
+                                </div>
+                                <div class="card-body d-flex flex-column p-4">
+                                    <div class="text-muted small mb-1">Available Stock: <?= $item['stock'] ?></div>
+                                    <h5 class="card-title fw-bold text-dark mb-2"><?= htmlspecialchars($item['name']) ?></h5>
+                                    <p class="card-text text-muted small flex-grow-1 mb-4"><?= htmlspecialchars($item['description']) ?></p>
+                                    
+                                    <div class="d-flex align-items-center justify-content-between mt-auto">
+                                        <span class="fw-bold text-dark fs-5">RM<?= number_format($item['price'], 2) ?></span>
+                                        
                                         <?php if ($vendor['status'] === 'open'): ?>
-                                            <button class="btn btn-sm btn-main add-to-cart" 
+                                            <!-- Stepper / Add Button Box matching reference style -->
+                                            <button type="button" class="btn btn-dark btn-sm px-4 rounded-pill fw-bold add-to-cart shadow-sm" 
                                                 data-id="<?= $item['id'] ?>" 
                                                 data-name="<?= htmlspecialchars($item['name']) ?>" 
                                                 data-price="<?= $item['price'] ?>"
-                                                data-stock="<?= $item['stock'] ?>">
-                                                <i class="fa-solid fa-cart-plus me-1"></i> Add to Order
+                                                data-stock="<?= $item['stock'] ?>"
+                                                style="background-color: #111; color: #fff;">
+                                                + Add
                                             </button>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary px-3 py-2">Closed</span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -88,148 +148,143 @@ if (!empty($vendor_token)) {
             <?php endif; ?>
         </div>
 
-        <!-- Order Summary & Delivery Column (Desktop Sidebar & Mobile Modal Trigger) -->
-        <div class="col-lg-4">
-            
-            <!-- DESKTOP SIDEBAR VIEW (Visible on large screens) -->
-            <div class="d-none d-lg-block">
-                <div class="card shadow-sm sticky-top border-0" style="top: 2rem;">
-                    <div class="card-header bg-dark text-white py-3">
-                        <h5 class="mb-0"><i class="fa-solid fa-receipt me-2" style="color: #b2ff81;"></i>Order Summary</h5>
+        <!-- Desktop Sidebar Order Summary -->
+        <div class="col-lg-4 d-none d-lg-block">
+            <div class="card shadow-sm sticky-top border-0 rounded-4 overflow-hidden" style="top: 2rem;">
+                <div class="card-header bg-dark text-white py-3 px-4" style="background-color: #1e392a !important;">
+                    <h5 class="mb-0 fw-bold"><i class="fa-solid fa-receipt me-2 text-warning"></i>Your Order</h5>
+                </div>
+                <div class="card-body p-4 bg-white">
+                    <div class="cart-items-container mb-3" style="max-height: 280px; overflow-y: auto;">
+                        <p class="text-muted text-center py-4">Your order is empty.</p>
                     </div>
-                    <div class="card-body bg-white border border-top-0 rounded-bottom">
-                        <!-- Reusable Cart Content Container -->
-                        <div class="cart-items-container mb-3">
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
+                        <span>Total:</span>
+                        <span class="cart-total-display text-success">RM0.00</span>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small text-muted">Your Name *</label>
+                        <input type="text" class="form-control customer-name-input rounded-3 shadow-none" placeholder="e.g. John Doe" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small text-muted">Phone Number *</label>
+                        <input type="tel" class="form-control customer-phone-input rounded-3 shadow-none" placeholder="e.g. +60123456789" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Order Type *</label>
+                        <select class="form-select order-type-select rounded-3 shadow-none">
+                            <option value="delivery">Delivery</option>
+                            <option value="pickup">Self Pickup</option>
+                        </select>
+                    </div>
+
+                    <div class="delivery-address-section mb-3">
+                        <label class="form-label fw-semibold small text-muted">Delivery Address *</label>
+                        <textarea class="form-control customer-address-input rounded-3 shadow-none" rows="2" placeholder="Street name, house number..."></textarea>
+                        
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-outline-dark btn-sm w-100 rounded-pill get-location-btn fw-semibold">
+                                <i class="fa-solid fa-map-pin me-1 text-danger"></i> Use Google Maps Pin Location
+                            </button>
+                            <input type="hidden" class="maps-pin-url-input" value="">
+                        </div>
+                    </div>
+
+                    <?php if ($vendor['status'] === 'open'): ?>
+                        <button type="button" class="btn btn-success w-100 fw-bold py-3 rounded-pill shadow-sm whatsapp-order-btn" style="background-color: #1e392a; border-color: #1e392a;" disabled>
+                            <i class="fa-brands fa-whatsapp me-2 fs-5"></i> Submit Order via WhatsApp
+                        </button>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-secondary w-100 fw-bold py-3 rounded-pill" disabled>Vendor is Closed</button>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Floating Cart Bar (Matches bottom pill bar in reference) -->
+        <?php if ($vendor['status'] === 'open'): ?>
+            <div class="d-lg-none fixed-bottom p-3 bg-transparent text-center" style="z-index: 1040; pointer-events: none;">
+                <button type="button" class="btn floating-order-bar py-3 px-4 shadow-lg fw-bold d-inline-flex justify-content-between align-items-center w-100" data-bs-toggle="modal" data-bs-target="#mobileCartModal" style="pointer-events: auto; max-width: 500px;">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-white text-dark rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold small" style="width: 28px; height: 28px;">
+                            <span id="mobile-cart-count">0</span>
+                        </div>
+                        <span>View your order</span>
+                    </div>
+                    <div>
+                        <span id="mobile-cart-total" class="fw-bold me-2">RM0.00</span>
+                        <i class="fa-solid fa-chevron-right small"></i>
+                    </div>
+                </button>
+            </div>
+        <?php endif; ?>
+
+        <!-- MOBILE CART MODAL -->
+        <div class="modal fade" id="mobileCartModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                    <div class="modal-header bg-dark text-white py-3 px-4" style="background-color: #1e392a !important;">
+                        <h5 class="modal-title fw-bold">
+                            <i class="fa-solid fa-receipt me-2 text-warning"></i>Your Order Summary
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body bg-light p-4">
+                        <div class="cart-items-container mb-3 bg-white p-3 rounded-4 shadow-sm">
                             <p class="text-muted text-center py-3">Your order is empty.</p>
                         </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
-                            <span>Total:</span>
-                            <span class="cart-total-display text-success">$0.00</span>
-                        </div>
                         
-                        <div class="mb-2">
-                            <label class="form-label fw-semibold small">Your Name *</label>
-                            <input type="text" class="form-control form-control-sm customer-name-input" placeholder="e.g., John Doe" required>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="form-label fw-semibold small">Phone Number *</label>
-                            <input type="tel" class="form-control form-control-sm customer-phone-input" placeholder="e.g., +1234567890" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Order Type *</label>
-                            <select class="form-select form-select-sm order-type-select">
-                                <option value="delivery">Delivery</option>
-                                <option value="pickup">Self Pickup</option>
-                            </select>
-                        </div>
-
-                        <div class="delivery-address-section mb-3">
-                            <label class="form-label fw-semibold small">Delivery Address *</label>
-                            <textarea class="form-control form-control-sm customer-address-input" rows="2" placeholder="Street address, apartment, etc."></textarea>
+                        <div class="bg-white p-4 rounded-4 shadow-sm mb-3">
+                            <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
+                                <span>Total:</span>
+                                <span class="cart-total-display text-success">RM0.00</span>
+                            </div>
                             
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-outline-dark btn-sm w-100 get-location-btn">
-                                    <i class="fa-solid fa-map-pin me-1 text-success"></i> Use Google Maps Pin Location
-                                </button>
-                                <input type="hidden" class="maps-pin-url-input" value="">
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small text-muted">Your Name *</label>
+                                <input type="text" class="form-control customer-name-input rounded-3 shadow-none" placeholder="e.g. John Doe" required>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label fw-semibold small text-muted">Phone Number *</label>
+                                <input type="tel" class="form-control customer-phone-input rounded-3 shadow-none" placeholder="e.g. +60123456789" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-muted">Order Type *</label>
+                                <select class="form-select order-type-select rounded-3 shadow-none">
+                                    <option value="delivery">Delivery</option>
+                                    <option value="pickup">Self Pickup</option>
+                                </select>
+                            </div>
+
+                            <div class="delivery-address-section mb-3">
+                                <label class="form-label fw-semibold small text-muted">Delivery Address *</label>
+                                <textarea class="form-control customer-address-input rounded-3 shadow-none" rows="2" placeholder="Street name, house number..."></textarea>
+                                
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-outline-dark btn-sm w-100 rounded-pill get-location-btn fw-semibold">
+                                        <i class="fa-solid fa-map-pin me-1 text-danger"></i> Use Google Maps Pin Location
+                                    </button>
+                                    <input type="hidden" class="maps-pin-url-input" value="">
+                                </div>
                             </div>
                         </div>
 
                         <?php if ($vendor['status'] === 'open'): ?>
-                            <button class="btn btn-success w-100 fw-bold py-2 shadow-sm whatsapp-order-btn" disabled>
+                            <button type="button" class="btn btn-success w-100 fw-bold py-3 rounded-pill shadow-sm whatsapp-order-btn" style="background-color: #1e392a; border-color: #1e392a;" disabled>
                                 <i class="fa-brands fa-whatsapp me-2 fs-5"></i> Submit Order via WhatsApp
                             </button>
                         <?php else: ?>
-                            <button class="btn btn-secondary w-100 fw-bold py-2" disabled>Vendor is Closed</button>
+                            <button type="button" class="btn btn-secondary w-100 fw-bold py-3 rounded-pill" disabled>Vendor is Closed</button>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
-
-            <!-- MOBILE FLOATING CART BUTTON (Visible only on mobile/tablet) -->
-            <?php if ($vendor['status'] === 'open'): ?>
-                <div class="d-lg-none fixed-bottom p-3 bg-white border-top shadow-lg" style="z-index: 1040;">
-                    <button type="button" class="btn btn-dark w-100 py-3 fw-bold d-flex justify-content-between align-items-center px-4 rounded-pill shadow" data-bs-toggle="modal" data-bs-target="#mobileCartModal" style="background-color: #1e293b; color: #ffffff;">
-                        <div>
-                            <i class="fa-solid fa-cart-shopping me-2 text-warning"></i>
-                            <span id="mobile-cart-count" class="badge bg-success rounded-pill me-1">0</span> Items
-                        </div>
-                        <div>
-                            <span id="mobile-cart-total" class="text-success fw-bold me-2">$0.00</span>
-                            <span class="badge px-3 py-2" style="background-color: #b2ff81; color: #1a1a1a;">View Cart <i class="fa-solid fa-chevron-up ms-1"></i></span>
-                        </div>
-                    </button>
-                </div>
-            <?php endif; ?>
-
-            <!-- MOBILE CART MODAL -->
-            <div class="modal fade" id="mobileCartModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
-                    <div class="modal-content border-0 shadow-lg">
-                        <div class="modal-header bg-dark text-white py-3">
-                            <h5 class="modal-title fw-bold">
-                                <i class="fa-solid fa-receipt me-2" style="color: #b2ff81;"></i>Your Order Summary
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body bg-light p-4">
-                            <!-- Reusable Cart Content Container -->
-                            <div class="cart-items-container mb-3 bg-white p-3 rounded shadow-sm">
-                                <p class="text-muted text-center py-3">Your order is empty.</p>
-                            </div>
-                            
-                            <div class="bg-white p-3 rounded shadow-sm mb-3">
-                                <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
-                                    <span>Total:</span>
-                                    <span class="cart-total-display text-success">$0.00</span>
-                                </div>
-                                
-                                <div class="mb-2">
-                                    <label class="form-label fw-semibold small">Your Name *</label>
-                                    <input type="text" class="form-control form-control-sm customer-name-input" placeholder="e.g., John Doe" required>
-                                </div>
-
-                                <div class="mb-2">
-                                    <label class="form-label fw-semibold small">Phone Number *</label>
-                                    <input type="tel" class="form-control form-control-sm customer-phone-input" placeholder="e.g., +1234567890" required>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold small">Order Type *</label>
-                                    <select class="form-select form-select-sm order-type-select">
-                                        <option value="delivery">Delivery</option>
-                                        <option value="pickup">Self Pickup</option>
-                                    </select>
-                                </div>
-
-                                <div class="delivery-address-section mb-3">
-                                    <label class="form-label fw-semibold small">Delivery Address *</label>
-                                    <textarea class="form-control form-control-sm customer-address-input" rows="2" placeholder="Street address, apartment, etc."></textarea>
-                                    
-                                    <div class="mt-2">
-                                        <button type="button" class="btn btn-outline-dark btn-sm w-100 get-location-btn">
-                                            <i class="fa-solid fa-map-pin me-1 text-success"></i> Use Google Maps Pin Location
-                                        </button>
-                                        <input type="hidden" class="maps-pin-url-input" value="">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <?php if ($vendor['status'] === 'open'): ?>
-                                <button class="btn btn-success w-100 fw-bold py-3 shadow-sm whatsapp-order-btn" disabled>
-                                    <i class="fa-brands fa-whatsapp me-2 fs-5"></i> Submit Order via WhatsApp
-                                </button>
-                            <?php else: ?>
-                                <button class="btn btn-secondary w-100 fw-bold py-2" disabled>Vendor is Closed</button>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 

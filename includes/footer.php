@@ -1,11 +1,10 @@
-    </main>
-    <footer class="bg-dark text-white text-center py-3 mt-auto">
+</main>
+    <footer class="bg-dark text-white text-center py-4 mt-auto">
         <div class="container">
-            <p class="mb-0">&copy; <?= date('Y') ?> Kedai-WA-Kamek. All rights reserved.</p>
+            <p class="mb-0 small text-white-50">&copy; <?= date('Y') ?> <strong>Kedai-WA-Kamek</strong>. All rights reserved. Direct WhatsApp Multi-Vendor Ordering.</p>
         </div>
     </footer>
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/simple_ordering_multivendor/assets/js/script.js"></script>
 </body>
 </html>
