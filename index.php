@@ -786,7 +786,7 @@ if (!empty($vendor_token)) {
         .faq-accordion .accordion-item {
             background-color: #f3f4ee !important;
             border: 1px solid #e2e8f0 !important;
-            border-radius: 50rem !important;
+            border-radius: 10rem !important;
             margin-bottom: 1rem;
             overflow: hidden;
         }
@@ -795,7 +795,7 @@ if (!empty($vendor_token)) {
             color: #0b291a !important;
             font-weight: 600;
             font-size: 1rem;
-            border-radius: 50rem !important;
+            border-radius: 10rem !important;
             box-shadow: none !important;
             padding: 1.2rem 1.75rem;
         }
@@ -1423,7 +1423,7 @@ if (!empty($vendor_token)) {
                     </h2>
                     <div id="faqCollapse1" class="accordion-collapse collapse" aria-labelledby="faqHeading1" data-bs-parent="#kedaiFaqAccordion">
                         <div class="accordion-body">
-                            Yes! Kedai WA Kamek is built for any small business in Malaysia[cite: 3]. Whether you sell local food & beverages, apparel, fresh produce, or handmade crafts, you can set up your custom catalog[cite: 6, 7].
+                            Yes. Kedai WA Kamek works for any business that sells products. Customers can add sizes, colours, weights, quantities or personalisation requests in the order notes.
                         </div>
                     </div>
                 </div>
@@ -1437,7 +1437,7 @@ if (!empty($vendor_token)) {
                     </h2>
                     <div id="faqCollapse2" class="accordion-collapse collapse" aria-labelledby="faqHeading2" data-bs-parent="#kedaiFaqAccordion">
                         <div class="accordion-body">
-                            No account or password creation is needed for your customers[cite: 6, 7]. They simply open your store link or scan your QR code[cite: 6, 7], pick their items[cite: 6], add remarks[cite: 1], and submit directly to your WhatsApp[cite: 3, 6].
+                            No. Customers can browse and order without signing in.
                         </div>
                     </div>
                 </div>
@@ -1451,7 +1451,7 @@ if (!empty($vendor_token)) {
                     </h2>
                     <div id="faqCollapse3" class="accordion-collapse collapse" aria-labelledby="faqHeading3" data-bs-parent="#kedaiFaqAccordion">
                         <div class="accordion-body">
-                            No app download is required[cite: 6, 7]. Everything runs smoothly through any standard web browser on mobile phones, tablets, or computers[cite: 6, 7].
+                            No. Your store opens in any web browser through a link or QR code.
                         </div>
                     </div>
                 </div>
@@ -1463,9 +1463,9 @@ if (!empty($vendor_token)) {
                             Do you charge commission?
                         </button>
                     </h2>
-                    <div id="faqHeading4" class="accordion-collapse collapse" aria-labelledby="faqHeading4" data-bs-parent="#kedaiFaqAccordion">
+                    <div id="faqCollapse4" class="accordion-collapse collapse" aria-labelledby="faqHeading4" data-bs-parent="#kedaiFaqAccordion">
                         <div class="accordion-body">
-                            We don't take any commission on your sales[cite: 6, 7]. All revenue from your orders belongs 100% to you[cite: 6, 7].
+                            No. We charge a one-time setup fee per store. Your sales belong to you.
                         </div>
                     </div>
                 </div>
@@ -1479,7 +1479,7 @@ if (!empty($vendor_token)) {
                     </h2>
                     <div id="faqCollapse5" class="accordion-collapse collapse" aria-labelledby="faqHeading5" data-bs-parent="#kedaiFaqAccordion">
                         <div class="accordion-body">
-                            Payments are handled directly between you and your customer[cite: 7]. When the order arrives via WhatsApp, you can share your DuitNow QR, online bank details, or agree on cash/transfer arrangements[cite: 7].
+                            You share your payment details on WhatsApp, such as DuitNow QR or online bank transfer.
                         </div>
                     </div>
                 </div>
@@ -1493,7 +1493,7 @@ if (!empty($vendor_token)) {
                     </h2>
                     <div id="faqCollapse6" class="accordion-collapse collapse" aria-labelledby="faqHeading6" data-bs-parent="#kedaiFaqAccordion">
                         <div class="accordion-body">
-                            You coordinate delivery directly with your customer[cite: 7]. You can arrange third-party riders, self-pickups, or postal delivery[cite: 7].
+                            You arrange delivery directly with the customer or a third-party courier. Delivery charges are separate.
                         </div>
                     </div>
                 </div>
@@ -1505,9 +1505,9 @@ if (!empty($vendor_token)) {
                             Can I cancel anytime?
                         </button>
                     </h2>
-                    <div id="faqHeading7" class="accordion-collapse collapse" aria-labelledby="faqHeading7" data-bs-parent="#kedaiFaqAccordion">
+                    <div id="faqCollapse7" class="accordion-collapse collapse" aria-labelledby="faqHeading7" data-bs-parent="#kedaiFaqAccordion">
                         <div class="accordion-body">
-                            Yes, you enjoy complete flexibility without complicated contracts or long-term lock-ins[cite: 6, 7].
+                            Yes.
                         </div>
                     </div>
                 </div>
@@ -1519,9 +1519,9 @@ if (!empty($vendor_token)) {
                             How do I get listed in Explore Kedai?
                         </button>
                     </h2>
-                    <div id="faqHeading8" class="accordion-collapse collapse" aria-labelledby="faqHeading8" data-bs-parent="#kedaiFaqAccordion">
+                    <div id="faqCollapse8" class="accordion-collapse collapse" aria-labelledby="faqHeading8" data-bs-parent="#kedaiFaqAccordion">
                         <div class="accordion-body">
-                            Simply click the "Get Your Store Set Up" button or message our team via WhatsApp to get your store onboarded into the directory[cite: 7].
+                            Every store we set up can be listed in Explore Kedai. Contact us on WhatsApp and we will add you.
                         </div>
                     </div>
                 </div>
