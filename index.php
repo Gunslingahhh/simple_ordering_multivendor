@@ -582,121 +582,954 @@ if (!empty($vendor_token)) {
 <?php 
 } else {
     // ----------------------------------------------------
-    // LANDING PAGE VIEW (When no ?token is present)
+    // LANDING PAGE VIEW (Rows 1 to 8 + remaining placeholders)
     // ----------------------------------------------------
     ?>
 
-    <!-- 1. HERO SECTION -->
-    <div class="p-5 mb-5 bg-white rounded-3 shadow-sm border text-center position-relative overflow-hidden border-top border-4" style="border-color: #b2ff81 !important;">
-        <div class="container-fluid py-4">
-            <span class="badge px-3 py-2 rounded-pill fw-bold mb-3 fs-6 shadow-sm" style="background-color: #b2ff81; color: #1a1a1a;">
-                <i class="fa-solid fa-bolt me-1"></i> Fast, Simple & Direct
-            </span>
-            <h1 class="display-4 fw-bold text-dark mb-3">Delicious Food, Straight to WhatsApp</h1>
-            <p class="col-md-8 fs-5 mx-auto text-muted mb-4">
-                Order your favorite meals directly from local food vendors with zero registration hassle. Just pick your items, drop your location, and send your order straight to the store's WhatsApp!
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        /* Row 1: Dark Forest Green Hero Section */
+        .landing-hero-green {
+            background-color: #0b291a;
+            color: #ffffff;
+            padding: 5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Row 2: Light Cream Section */
+        .landing-row-cream {
+            background-color: #f3f4ee;
+            padding: 4rem 2rem;
+        }
+        /* Row 3: Light Clean Section */
+        .landing-row-white {
+            background-color: #ffffff;
+            padding: 4rem 2rem;
+            border: 1px solid #eaeaea;
+        }
+        /* Row 4: How Does It Work Section */
+        .landing-row-how-it-works {
+            background-color: #ffffff;
+            padding: 5rem 2rem;
+            border: 1px solid #eaeaea;
+        }
+        /* Row 5: Your Store, Your Products Section */
+        .landing-row-your-store {
+            background-color: #f3f4ee;
+            padding: 5rem 2rem;
+        }
+        /* Row 6: Dark Business Rules Section */
+        .landing-row-rules {
+            background-color: #0b291a;
+            color: #ffffff;
+            padding: 5rem 2rem;
+        }
+        /* Row 7: Delivery & Direct Payments Info Section */
+        .landing-row-payments {
+            background-color: #ffffff;
+            padding: 5rem 2rem;
+            border: 1px solid #eaeaea;
+        }
+        /* Row 8: Explore Kedai Directory Section */
+        .landing-row-explore {
+            background-color: #f3f4ee;
+            padding: 5rem 2rem;
+        }
+        .generic-row {
+            background-color: #f8f9fa;
+            padding: 3rem 2rem;
+            border: 1px dashed #cbd5e1;
+        }
+        .custom-orange-btn {
+            background: linear-gradient(135deg, #ffa726, #fb8c00);
+            color: #ffffff !important;
+            border-radius: 50rem;
+            padding: 0.6rem 1.5rem;
+            font-weight: 700;
+            border: none;
+        }
+        .step-icon-circle {
+            width: 45px;
+            height: 45px;
+            background-color: #1e392a;
+            color: #b2ff81;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .rule-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            height: 100%;
+        }
+        .info-card-cream {
+            background-color: #f3f4ee;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 2.5rem;
+            height: 100%;
+        }
+        .category-chip {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 50rem;
+            padding: 0.5rem 1.25rem;
+            font-weight: 600;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .category-chip.active, .category-chip:hover {
+            background-color: #1e392a;
+            color: #ffffff;
+            border-color: #1e392a;
+        }
+        .vendor-preview-card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            border: none;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+            text-align: left;
+        }
+        /* Row 9: Supported By Local Partners */
+        .landing-row-partners {
+            background-color: #f3f4ee;
+            padding: 5rem 2rem;
+        }
+        .sponsor-slot-card {
+            background-color: #ffffff;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 0.85rem;
+            padding: 1.5rem 1.25rem;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .slot-pill-label {
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            background-color: #f3f4ee;
+            color: #64748b;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.15rem 0.55rem;
+            border-radius: 50rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .sponsor-cta-banner {
+            background-color: #0b291a;
+            border-radius: 1rem;
+            padding: 1.5rem 2rem;
+        }
+        .btn-lime-pill {
+            background-color: #b2ff81;
+            color: #0b291a !important;
+            font-weight: 700;
+            font-size: 0.85rem;
+            border-radius: 50rem;
+            padding: 0.65rem 1.5rem;
+            border: none;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        .btn-lime-pill:hover {
+            background-color: #9be667;
+            transform: translateY(-1px);
+        }
+
+        /* Row 10: Ready To Take Your Business Digital */
+        .landing-row-digital-cta {
+            background: linear-gradient(rgba(11, 41, 26, 0.92), rgba(11, 41, 26, 0.95)),
+                        url('/simple_ordering_multivendor/assets/cta-bg.jpg') center/cover no-repeat;
+            background-color: #0b291a;
+            color: #ffffff;
+            padding: 5.5rem 2rem;
+        }
+        .wa-number-pill {
+            background-color: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(178, 255, 129, 0.35);
+            color: #ffffff !important;
+            border-radius: 50rem;
+            padding: 0.5rem 1.25rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        .wa-number-pill:hover {
+            background-color: rgba(178, 255, 129, 0.15);
+            border-color: #b2ff81;
+        }
+        /* Row 11: Frequently Asked Questions */
+        .landing-row-faq {
+            background-color: #ffffff;
+            padding: 5rem 2rem;
+            border: 1px solid #eaeaea;
+        }
+        .faq-accordion .accordion-item {
+            background-color: #f3f4ee !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 50rem !important;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .faq-accordion .accordion-button {
+            background-color: #f3f4ee !important;
+            color: #0b291a !important;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 50rem !important;
+            box-shadow: none !important;
+            padding: 1.2rem 1.75rem;
+        }
+        .faq-accordion .accordion-button:not(.collapsed) {
+            background-color: #ebf0e6 !important;
+            color: #0b291a !important;
+            border-bottom-left-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+        }
+        .faq-accordion .accordion-body {
+            background-color: #f3f4ee;
+            color: #475569;
+            padding: 0.5rem 1.75rem 1.5rem 1.75rem;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .faq-accordion .accordion-collapse {
+            border-bottom-left-radius: 1rem;
+            border-bottom-right-radius: 1rem;
+        }
+    </style>
+
+    <!-- ==================================================== -->
+    <!-- ROW 1: DARK FOREST GREEN HERO -->
+    <!-- ==================================================== -->
+    <section class="landing-full-row landing-hero-green shadow-sm">
+        <div class="landing-content-inner container py-4">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-7 text-center text-lg-start">
+                    <p class="fw-bold fst-italic mb-2" style="color: #b2ff81; font-size: 1.1rem; font-family: cursive;">
+                        Bisnes Makin Mudah
+                    </p>
+                    <h1 class="display-3 fw-bold text-white mb-3" style="line-height: 1.1; letter-spacing: -1px;">
+                        YOUR OWN DIGITAL STORE.<br>
+                        ORDERS STRAIGHT TO WHATSAPP.
+                    </h1>
+                    <p class="text-white-50 mb-4 col-lg-10">
+                        Your own digital store. Orders straight to WhatsApp. Built for Malaysian small businesses, from Sarawak.
+                    </p>
+                    <div class="d-flex justify-content-center justify-content-lg-start gap-3 flex-wrap">
+                        <a href="#how-it-works" class="btn custom-orange-btn px-4 shadow-sm">
+                            GET YOUR DIGITAL STORE
+                        </a>
+                        <a href="#explore" class="btn btn-outline-light px-4 rounded-pill fw-bold">
+                            LIST MY STORE
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-center">
+                    <div class="p-3 bg-black bg-opacity-25 rounded-4 border border-secondary border-opacity-25 d-inline-block">
+                        <i class="fa-solid fa-mobile-screen-button display-1 mb-2" style="color: #b2ff81 !important;"></i>
+                        <h6 class="text-white fw-bold mb-0">Live WhatsApp Order Preview</h6>
+                        <small class="text-white-50">Instant cart & checkout flow</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ROW 2: LIGHT CREAM CATEGORY GRID -->
+    <!-- ==================================================== -->
+    <section class="landing-full-row landing-row-cream shadow-sm text-center">
+        <div class="landing-content-inner container py-3">
+            <small class="text-muted text-uppercase fw-bold tracking-wider" style="letter-spacing: 1px;">Fresh picks for home, happy for customer</small>
+            <h2 class="fw-bold text-dark display-6 mb-4" style="letter-spacing: -0.5px;">ONE PLATFORM.<br>EVERY KIND OF KEDAI.</h2>
+            
+            <div class="row row-cols-1 row-cols-md-3 g-4 justify-content-center">
+                <div class="col">
+                    <div class="card bg-white border-0 shadow-sm rounded-4 p-3 h-100">
+                        <div class="bg-light rounded-3 p-4 mb-3 text-muted">
+                            <i class="fa-solid fa-utensils fs-1 text-success mb-2"></i>
+                            <h5 class="fw-bold text-dark mb-0">Food & Beverages</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card bg-white border-0 shadow-sm rounded-4 p-3 h-100">
+                        <div class="bg-light rounded-3 p-4 mb-3 text-muted">
+                            <i class="fa-solid fa-shirt fs-1 text-success mb-2"></i>
+                            <h5 class="fw-bold text-dark mb-0">Fashion & Apparel</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card bg-white border-0 shadow-sm rounded-4 p-3 h-100">
+                        <div class="bg-light rounded-3 p-4 mb-3 text-muted">
+                            <i class="fa-solid fa-carrot fs-1 text-success mb-2"></i>
+                            <h5 class="fw-bold text-dark mb-0">Fresh Produce</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ROW 3: FEATURE HIGHLIGHTS -->
+    <!-- ==================================================== -->
+    <section class="landing-full-row landing-row-white shadow-sm text-center">
+        <div class="landing-content-inner container py-3">
+            <small class="text-muted text-uppercase fw-bold tracking-wider" style="letter-spacing: 1px;">Made for our Malaysian business</small>
+            <h3 class="fw-bold text-dark display-6 mb-5">LESS CHAT. MORE ORDERS.</h3>
+            
+            <div class="row row-cols-1 row-cols-md-4 g-4">
+                <div class="col">
+                    <div class="p-4 bg-light rounded-4 border h-100">
+                        <i class="fa-solid fa-bolt text-success fs-3 mb-2"></i>
+                        <h6 class="fw-bold text-dark">ONE TIME SETUP</h6>
+                        <p class="text-muted small mb-0">Quick configuration to get your menu live instantly.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="p-4 bg-light rounded-4 border h-100">
+                        <i class="fa-solid fa-qrcode text-success fs-3 mb-2"></i>
+                        <h6 class="fw-bold text-dark">INSTANT SCAN QR</h6>
+                        <p class="text-muted small mb-0">Tabletop QR codes for fast customer scanning.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="p-4 bg-light rounded-4 border h-100">
+                        <i class="fa-solid fa-comments text-success fs-3 mb-2"></i>
+                        <h6 class="fw-bold text-dark">NO CUSTOMER LOG-IN</h6>
+                        <p class="text-muted small mb-0">Zero friction ordering straight to WhatsApp.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="p-4 bg-light rounded-4 border h-100">
+                        <i class="fa-solid fa-shield-halved text-success fs-3 mb-2"></i>
+                        <h6 class="fw-bold text-dark">SIMPLE CUSTODIAN</h6>
+                        <p class="text-muted small mb-0">Maintain total control of your business revenues.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ROW 4: HOW DOES IT WORK -->
+    <!-- ==================================================== -->
+    <section class="landing-full-row landing-row-how-it-works shadow-sm">
+        <div class="landing-content-inner container py-3">
+            <div class="text-center mb-5">
+                <small class="text-muted text-uppercase fw-bold" style="letter-spacing: 1px;">Simple Steps. Easy Ordering.</small>
+                <h2 class="fw-bold display-5 text-dark" style="letter-spacing: -1px;">HOW DOES IT WORK?</h2>
+            </div>
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6">
+                    <div class="d-flex align-items-start mb-4">
+                        <div class="step-icon-circle me-3"><i class="fa-solid fa-store"></i></div>
+                        <div>
+                            <small class="text-success fw-bold text-uppercase">Step 01</small>
+                            <h5 class="fw-bold text-dark mb-1">YOUR DIGITAL STORE</h5>
+                            <p class="text-muted small mb-0">We set up your personalised digital store with your business details, operating hours, product photos and product list.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start mb-4">
+                        <div class="step-icon-circle me-3"><i class="fa-solid fa-basket-shopping"></i></div>
+                        <div>
+                            <small class="text-success fw-bold text-uppercase">Step 02</small>
+                            <h5 class="fw-bold text-dark mb-1">CUSTOMERS BROWSE</h5>
+                            <p class="text-muted small mb-0">Customers open your digital store through a link or QR code. No downloads or sign-ins required.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start mb-4">
+                        <div class="step-icon-circle me-3"><i class="fa-solid fa-list-check"></i></div>
+                        <div>
+                            <small class="text-success fw-bold text-uppercase">Step 03</small>
+                            <h5 class="fw-bold text-dark mb-1">CUSTOMERS PLACE ORDERS</h5>
+                            <p class="text-muted small mb-0">They select their favourite items, choose quantities, add special notes and enter their name for order identification.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start">
+                        <div class="step-icon-circle me-3"><i class="fa-brands fa-whatsapp"></i></div>
+                        <div>
+                            <small class="text-success fw-bold text-uppercase">Step 04</small>
+                            <h5 class="fw-bold text-dark mb-1">ORDER SENT TO WHATSAPP</h5>
+                            <p class="text-muted small mb-0">The complete order summary goes directly to your WhatsApp. You can confirm the order and arrange payment with your customer.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <div class="p-3 bg-light rounded-4 border shadow-sm d-inline-block">
+                        <i class="fa-solid fa-mobile-screen display-2 text-success mb-2"></i>
+                        <h6 class="fw-bold text-dark mb-0">Interactive Mobile Checkout Flow</h6>
+                        <small class="text-muted">Real-time WhatsApp payload generator</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ROW 5: YOUR STORE. YOUR PRODUCTS. YOUR WAY. -->
+    <!-- ==================================================== -->
+    <section class="landing-full-row landing-row-your-store shadow-sm text-center">
+        <div class="landing-content-inner container py-3">
+            <small class="text-muted text-uppercase fw-bold" style="letter-spacing: 1px;">See it in action</small>
+            <h2 class="fw-bold display-5 text-dark mb-5" style="letter-spacing: -1px;">YOUR STORE. YOUR PRODUCTS. YOUR WAY.</h2>
+            
+            <div class="row row-cols-1 row-cols-md-3 g-4 justify-content-center mb-5">
+                <div class="col">
+                    <div class="p-4 bg-white rounded-4 shadow-sm border h-100">
+                        <span class="badge bg-success mb-2 px-3 py-1 rounded-pill">01</span>
+                        <h5 class="fw-bold text-dark">BROWSE THE STORE</h5>
+                        <p class="text-muted small mb-0">Easy, intuitive layout with categories, descriptions and photos.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="p-4 bg-white rounded-4 shadow-sm border h-100">
+                        <span class="badge bg-success mb-2 px-3 py-1 rounded-pill">02</span>
+                        <h5 class="fw-bold text-dark">CUSTOMISE YOUR ORDER</h5>
+                        <p class="text-muted small mb-0">Select quantities, add notes and review the order list.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="p-4 bg-white rounded-4 shadow-sm border h-100">
+                        <span class="badge bg-success mb-2 px-3 py-1 rounded-pill">03</span>
+                        <h5 class="fw-bold text-dark">SEND TO WHATSAPP</h5>
+                        <p class="text-muted small mb-0">Instant summary with customer terms, items and total.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="text-muted fst-italic mb-0" style="font-size: 1.1rem;">
+                Your customers don't need to download anything or create an account. Just open the link and order.
             </p>
-            <div class="d-flex justify-content-center gap-3">
-                <a href="#how-it-works" class="btn btn-dark btn-lg px-4 fw-bold">
-                    <i class="fa-solid fa-circle-info me-2 text-success"></i> How It Works
-                </a>
-                <a href="#become-vendor" class="btn btn-main btn-lg px-4 fw-bold shadow-sm">
-                    <i class="fa-solid fa-store me-2"></i> Join as a Vendor
-                </a>
-            </div>
         </div>
-    </div>
+    </section>
 
-    <!-- 2. PLATFORM FEATURES FOR CUSTOMERS -->
-    <div id="how-it-works" class="mb-5">
-        <div class="text-center mb-4">
-            <h2 class="fw-bold text-dark">Why Order With Kedai-WA-Kamek?</h2>
-            <p class="text-muted">Designed for convenience and speed</p>
+    <!-- ==================================================== -->
+    <!-- ROW 6: YOUR BUSINESS. YOUR SALES. YOUR RULES. -->
+    <!-- ==================================================== -->
+    <section class="landing-full-row landing-row-rules shadow-sm text-center">
+        <div class="landing-content-inner container py-3">
+            <small class="text-uppercase fw-bold" style="color: #b2ff81; letter-spacing: 1px;">Keep things simple</small>
+            <h2 class="fw-bold display-5 text-white mb-5" style="letter-spacing: -1px;">YOUR BUSINESS. YOUR SALES. YOUR RULES.</h2>
+            
+            <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+                <div class="col">
+                    <div class="rule-card text-start">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fa-solid fa-percent text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
+                            <h6 class="fw-bold text-white mb-0">100% OF YOUR SALES</h6>
+                        </div>
+                        <p class="text-white-50 small mb-0">We don't charge commission on your orders. Your sales belong to you.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="rule-card text-start">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fa-solid fa-screwdriver-wrench text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
+                            <h6 class="fw-bold text-white mb-0">ONE-TIME SETUP FEE</h6>
+                        </div>
+                        <p class="text-white-50 small mb-0">Pay a once-off setup fee for much store. No per-order commission.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="rule-card text-start">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fa-solid fa-user-xmark text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
+                            <h6 class="fw-bold text-white mb-0">NO CUSTOMER REGISTRATION</h6>
+                        </div>
+                        <p class="text-white-50 small mb-0">Customers can browse and order without creating accounts.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="rule-card text-start">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fa-solid fa-bolt text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
+                            <h6 class="fw-bold text-white mb-0">EASY TO USE</h6>
+                        </div>
+                        <p class="text-white-50 small mb-0">A straightforward store designed for everyday customers and business owners.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="rule-card text-start">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fa-solid fa-globe text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
+                            <h6 class="fw-bold text-white mb-0">NO APP DOWNLOAD</h6>
+                        </div>
+                        <p class="text-white-50 small mb-0">Works through a web browser. Just share your store link or QR code.</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="rule-card text-start">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fa-solid fa-shield text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
+                            <h6 class="fw-bold text-white mb-0">CANCEL ANYTIME</h6>
+                        </div>
+                        <p class="text-white-50 small mb-0">Enjoy flexibility without complicated commitments.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="text-white-50 small fst-italic mb-0 pt-3 border-top border-secondary border-opacity-25">
+                Kedai WA Kamek is a store builder, not a marketplace. Your customers order from you, directly.
+            </p>
         </div>
-        <div class="row row-cols-1 row-cols-md-3 g-4">
-            <div class="col">
-                <div class="card h-100 shadow-sm text-center p-3 border-0">
-                    <div class="card-body">
-                        <div class="rounded-circle d-inline-flex p-3 mb-3 shadow-sm" style="background-color: rgba(178, 255, 129, 0.3); color: #2e7d32;">
-                            <i class="fa-solid fa-user-slash fs-2"></i>
-                        </div>
-                        <h5 class="fw-bold">No Registration Needed</h5>
-                        <p class="text-muted small mb-0">Skip the lengthy signup forms and password resets. Order immediately without creating an account.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card h-100 shadow-sm text-center p-3 border-0">
-                    <div class="card-body">
-                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex p-3 mb-3 shadow-sm">
-                            <i class="fa-brands fa-whatsapp fs-2"></i>
-                        </div>
-                        <h5 class="fw-bold">Direct WhatsApp Checkout</h5>
-                        <p class="text-muted small mb-0">Your order is formatted instantly into a clear WhatsApp message sent directly to the vendor's phone.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card h-100 shadow-sm text-center p-3 border-0">
-                    <div class="card-body">
-                        <div class="rounded-circle d-inline-flex p-3 mb-3 shadow-sm" style="background-color: rgba(13, 110, 253, 0.1); color: #0d6efd;">
-                            <i class="fa-solid fa-location-dot fs-2"></i>
-                        </div>
-                        <h5 class="fw-bold">1-Click Map Location</h5>
-                        <p class="text-muted small mb-0">Share your live delivery location pin with Google Maps integration so your food arrives accurately every time.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    </section>
 
-    <!-- 3. VENDOR RECRUITMENT & VALUE PROPOSITION SECTION -->
-    <div id="become-vendor" class="bg-dark text-white rounded-3 p-5 shadow-sm mb-5 border-bottom border-4" style="border-color: #b2ff81 !important;">
-        <div class="row align-items-center g-4">
-            <div class="col-lg-7">
-                <span class="badge px-3 py-1 rounded-pill fw-bold mb-2 shadow-sm" style="background-color: #b2ff81; color: #1a1a1a;">For Restaurant & Food Stall Owners</span>
-                <h2 class="fw-bold display-6 mb-3">Grow Your Food Business with Zero Commissions</h2>
-                <p class="text-white-50 mb-4">
-                    Stop paying heavy commission fees to third-party delivery apps. Get your own dedicated store link, manage your menu items, track real-time stock, and receive orders directly on your WhatsApp line!
+    <!-- ==================================================== -->
+    <!-- ROW 7: WHAT ABOUT DELIVERY? & HOW DO CUSTOMERS PAY? (Matching Image 4, Top) -->
+    <!-- ==================================================== -->
+    <section class="landing-full-row landing-row-payments shadow-sm text-center">
+        <div class="landing-content-inner container py-3">
+            <small class="text-muted text-uppercase fw-bold" style="letter-spacing: 1px;">No middleman</small>
+            <h2 class="fw-bold display-5 text-dark mb-5" style="letter-spacing: -1px;">ORDERS MADE SIMPLE.<br>PAYMENTS MADE DIRECT.</h2>
+            
+            <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+                <!-- Delivery Info Card -->
+                <div class="col">
+                    <div class="info-card-cream text-start h-100">
+                        <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle d-inline-flex mb-3">
+                            <i class="fa-solid fa-motorcycle fs-4"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-2">WHAT ABOUT DELIVERY?</h4>
+                        <p class="text-muted small fst-italic mb-3">Want your customers to enjoy delivery?</p>
+                        <p class="text-muted small mb-0">
+                            Customers discuss directly with the vendor to arrange a third-party courier or delivery service. Customers pay the actual product price, while delivery charges are arranged and paid separately.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Payment Info Card -->
+                <div class="col">
+                    <div class="info-card-cream text-start h-100">
+                        <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle d-inline-flex mb-3">
+                            <i class="fa-solid fa-wallet fs-4"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-2">HOW DO CUSTOMERS PAY?</h4>
+                        <p class="text-muted small fst-italic mb-3">Simple. Direct. Between you and your customer.</p>
+                        <p class="text-muted small mb-3">
+                            When the order summary reaches your WhatsApp, you provide your payment details directly.
+                        </p>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm small fw-semibold"><i class="fa-solid fa-qrcode text-success me-1"></i> DuitNow QR</span>
+                            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm small fw-semibold"><i class="fa-solid fa-building-columns text-success me-1"></i> Online bank transfer</span>
+                            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill shadow-sm small fw-semibold"><i class="fa-solid fa-handshake text-success me-1"></i> Other agreed arrangements</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disclaimer Notice Box -->
+            <div class="p-3 bg-white rounded-3 border border-secondary border-opacity-25 d-inline-block text-start" style="max-width: 800px;">
+                <div class="d-flex align-items-center">
+                    <i class="fa-solid fa-circle-info text-muted fs-5 me-3"></i>
+                    <p class="text-muted small mb-0">
+                        <strong>Kedai WA Kamek does not collect customer payments or process transactions.</strong> Payments are handled directly between customers and vendors.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ROW 8: EXPLORE KEDAI DIRECTORY (Matching Image 4, Bottom) -->
+    <!-- ==================================================== -->
+    <section class="landing-full-row landing-row-explore shadow-sm">
+        <div class="landing-content-inner container py-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+                <div>
+                    <small class="text-muted text-uppercase fw-bold" style="letter-spacing: 1px;">Discover local businesses</small>
+                    <h2 class="fw-bold display-6 text-dark mb-1" style="letter-spacing: -0.5px;">EXPLORE KEDAI</h2>
+                    <p class="text-muted small mb-0">Browse local food, fashion, produce, crafts and more from businesses across Sarawak and Malaysia.</p>
+                </div>
+                <div>
+                    <a href="#explore" class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm" style="background-color: #1e392a;">
+                        EXPLORE ALL KEDAI <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Category Filter Chips -->
+            <div class="d-flex gap-2 overflow-auto pb-3 mb-4" style="white-space: nowrap;">
+                <a href="#" class="category-chip active">Food & Beverages</a>
+                <a href="#" class="category-chip">Fashion & Apparel</a>
+                <a href="#" class="category-chip">Fresh Produce</a>
+                <a href="#" class="category-chip">Handmade Crafts</a>
+                <a href="#" class="category-chip">Others</a>
+            </div>
+
+            <!-- Vendor Cards Preview Grid -->
+            <div class="row row-cols-1 row-cols-md-4 g-4">
+                <!-- Vendor Card 1 -->
+                <div class="col">
+                    <div class="card vendor-preview-card h-100">
+                        <div class="p-3 pb-0">
+                            <span class="badge bg-success bg-opacity-10 text-success small fw-bold px-2 py-1">FOOD & BEVERAGES</span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary small fw-bold px-2 py-1 float-end">SAMPLE LISTING</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="fw-bold text-dark mb-1">DAPUR MAK LONG</h5>
+                            <p class="text-muted small mb-2" style="font-size: 0.8rem;">Masakan kampung, rasa macam rumah sendiri</p>
+                            <p class="text-muted small mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-location-dot text-success me-1"></i> Gedong, Sarawak</p>
+                            <p class="text-muted small mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-clock text-success me-1"></i> 7:00 am - 2:00 pm</p>
+                            <p class="text-muted small mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-motorcycle text-success me-1"></i> Delivery arranged with vendor</p>
+                            <button class="btn btn-dark btn-sm w-100 rounded-pill fw-bold" style="background-color: #1e392a;">VIEW STORE</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Vendor Card 2 -->
+                <div class="col">
+                    <div class="card vendor-preview-card h-100">
+                        <div class="p-3 pb-0">
+                            <span class="badge bg-success bg-opacity-10 text-success small fw-bold px-2 py-1">FOOD & BEVERAGES</span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary small fw-bold px-2 py-1 float-end">SAMPLE LISTING</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="fw-bold text-dark mb-1">KOPITIAM AH SENG</h5>
+                            <p class="text-muted small mb-2" style="font-size: 0.8rem;">Kopi tarik pagi, roti bakar kaya sejak 1988</p>
+                            <p class="text-muted small mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-location-dot text-success me-1"></i> Kuching, Sarawak</p>
+                            <p class="text-muted small mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-clock text-success me-1"></i> 6:30 am - 3:00 pm</p>
+                            <p class="text-muted small mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-motorcycle text-success me-1"></i> Delivery arranged with vendor</p>
+                            <button class="btn btn-dark btn-sm w-100 rounded-pill fw-bold" style="background-color: #1e392a;">VIEW STORE</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Vendor Card 3 -->
+                <div class="col">
+                    <div class="card vendor-preview-card h-100">
+                        <div class="p-3 pb-0">
+                            <span class="badge bg-success bg-opacity-10 text-success small fw-bold px-2 py-1">FOOD & BEVERAGES</span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary small fw-bold px-2 py-1 float-end">SAMPLE LISTING</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="fw-bold text-dark mb-1">KEK LAPIS MAMA ROS</h5>
+                            <p class="text-muted small mb-2" style="font-size: 0.8rem;">Kek lapis Sarawak buatan tangan</p>
+                            <p class="text-muted small mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-location-dot text-success me-1"></i> Kuching, Sarawak</p>
+                            <p class="text-muted small mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-clock text-success me-1"></i> 9:00 am - 6:00 pm</p>
+                            <p class="text-muted small mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-motorcycle text-success me-1"></i> Delivery arranged with vendor</p>
+                            <button class="btn btn-dark btn-sm w-100 rounded-pill fw-bold" style="background-color: #1e392a;">VIEW STORE</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Vendor Card 4 -->
+                <div class="col">
+                    <div class="card vendor-preview-card h-100">
+                        <div class="p-3 pb-0">
+                            <span class="badge bg-primary bg-opacity-10 text-primary small fw-bold px-2 py-1">FASHION & APPAREL</span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary small fw-bold px-2 py-1 float-end">SAMPLE LISTING</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="fw-bold text-dark mb-1">SAMPLE BATIK & TUDUNG</h5>
+                            <p class="text-muted small mb-2" style="font-size: 0.8rem;">Batik, baju kurung and everyday tudung</p>
+                            <p class="text-muted small mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-location-dot text-success me-1"></i> Kuching, Sarawak</p>
+                            <p class="text-muted small mb-1" style="font-size: 0.75rem;"><i class="fa-solid fa-clock text-success me-1"></i> 10:00 am - 8:00 pm</p>
+                            <p class="text-muted small mb-3" style="font-size: 0.75rem;"><i class="fa-solid fa-motorcycle text-success me-1"></i> Delivery arranged with vendor</p>
+                            <button class="btn btn-dark btn-sm w-100 rounded-pill fw-bold" style="background-color: #1e392a;">VIEW STORE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ROW 9: SUPPORTED BY LOCAL PARTNERS -->
+    <!-- ==================================================== -->
+    <section id="partners" class="landing-full-row landing-row-partners shadow-sm">
+        <div class="landing-content-inner container py-2" style="max-width: 980px;">
+            
+            <!-- Section Header -->
+            <div class="text-center mb-5">
+                <p class="fw-bold fst-italic mb-1" style="color: #5b8c3e; font-family: cursive; font-size: 1.1rem;">
+                    Growing local together
                 </p>
-                <div class="row row-cols-1 row-cols-sm-2 g-3 mb-4">
-                    <div class="col d-flex align-items-center">
-                        <i class="fa-solid fa-check-circle fs-5 me-2" style="color: #b2ff81;"></i>
-                        <span>100% Direct Customer Relation</span>
-                    </div>
-                    <div class="col d-flex align-items-center">
-                        <i class="fa-solid fa-check-circle fs-5 me-2" style="color: #b2ff81;"></i>
-                        <span>Real-Time Inventory Control</span>
-                    </div>
-                    <div class="col d-flex align-items-center">
-                        <i class="fa-solid fa-check-circle fs-5 me-2" style="color: #b2ff81;"></i>
-                        <span>Unique Private Store Link</span>
-                    </div>
-                    <div class="col d-flex align-items-center">
-                        <i class="fa-solid fa-check-circle fs-5 me-2" style="color: #b2ff81;"></i>
-                        <span>Instant Order Notifications</span>
-                    </div>
-                </div>
+                <h2 class="fw-bold display-5 text-dark mb-2" style="color: #0b291a !important; letter-spacing: -1px;">
+                    SUPPORTED BY LOCAL PARTNERS
+                </h2>
+                <p class="text-muted small mx-auto mb-0" style="max-width: 520px;">
+                    Kedai WA Kamek is made possible with the support of partners who believe in helping local businesses grow digitally.
+                </p>
             </div>
-            <div class="col-lg-5 text-center">
-                <div class="card bg-light text-dark p-4 shadow border-0">
-                    <div class="card-body">
-                        <h4 class="fw-bold mb-2">Want to Partner With Us?</h4>
-                        <p class="text-muted small mb-3">Contact our admin team or sign in to set up your digital menu in minutes.</p>
-                        <div class="d-grid gap-2">
-                            <a href="login.php" class="btn btn-main fw-bold py-2 shadow-sm">
-                                <i class="fa-solid fa-right-to-bracket me-1"></i> Login
-                            </a>
-                            <a href="https://wa.me/1234567890?text=Hi!%20I%20would%20like%20to%20register%20my%20store%20on%20Kedai-WA-Kamek" target="_blank" class="btn btn-outline-dark fw-bold py-2">
-                                <i class="fa-brands fa-whatsapp me-1 text-success"></i> Contact Admin to Register
-                            </a>
+
+            <!-- Sub-grid 1: Our Sponsors (4 Columns) -->
+            <div class="mb-4">
+                <p class="text-muted fw-bold text-uppercase mb-2" style="font-size: 0.72rem; letter-spacing: 1px;">
+                    OUR SPONSORS
+                </p>
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-3">
+                    <div class="col">
+                        <div class="sponsor-slot-card">
+                            <span class="slot-pill-label">SPONSORED</span>
+                            <span class="text-muted small mt-2">Sponsor logo here</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="sponsor-slot-card">
+                            <span class="slot-pill-label">SPONSORED</span>
+                            <span class="text-muted small mt-2">Sponsor logo here</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="sponsor-slot-card">
+                            <span class="slot-pill-label">SPONSORED</span>
+                            <span class="text-muted small mt-2">Sponsor logo here</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="sponsor-slot-card">
+                            <span class="slot-pill-label">SPONSORED</span>
+                            <span class="text-muted small mt-2">Sponsor logo here</span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
+            <!-- Sub-grid 2: Powered By (3 Columns) -->
+            <div class="mb-5">
+                <p class="text-muted fw-bold text-uppercase mb-2" style="font-size: 0.72rem; letter-spacing: 1px;">
+                    POWERED BY
+                </p>
+                <div class="row row-cols-1 row-cols-md-3 g-3">
+                    <div class="col">
+                        <div class="sponsor-slot-card">
+                            <span class="slot-pill-label">PARTNER</span>
+                            <span class="text-muted small mt-2">Partner logo here</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="sponsor-slot-card">
+                            <span class="slot-pill-label">PARTNER</span>
+                            <span class="text-muted small mt-2">Partner logo here</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="sponsor-slot-card">
+                            <span class="slot-pill-label">PARTNER</span>
+                            <span class="text-muted small mt-2">Partner logo here</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Dark Green Sponsor Banner -->
+            <div class="sponsor-cta-banner d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 shadow-sm">
+                <div class="d-flex align-items-center gap-3 text-center text-md-start flex-column flex-md-row">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 46px; height: 46px; background-color: #b2ff81; color: #0b291a;">
+                        <i class="fa-regular fa-handshake fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold text-white mb-0" style="letter-spacing: 0.3px;">INTERESTED IN BECOMING A SPONSOR?</h5>
+                        <p class="text-white-50 small mb-0">Support local Malaysian businesses and grow alongside them.</p>
+                    </div>
+                </div>
+                <a href="https://wa.me/601169893389?text=Hi%20Kedai%20WA%20Kamek%2C%20I%20am%20interested%20in%20becoming%20a%20sponsor." target="_blank" class="btn-lime-pill flex-shrink-0">
+                    <i class="fa-brands fa-whatsapp me-2 fs-6"></i> CONTACT US ON WHATSAPP
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ROW 10: READY TO TAKE YOUR BUSINESS DIGITAL? -->
+    <!-- ==================================================== -->
+    <section id="become-vendor" class="landing-full-row landing-row-digital-cta shadow-sm text-center">
+        <div class="landing-content-inner container py-2" style="max-width: 760px;">
+            
+            <p class="fw-bold fst-italic mb-2" style="color: #b2ff81; font-family: cursive; font-size: 1.25rem;">
+                Siap untuk berniaga online?
+            </p>
+            <h2 class="display-4 fw-bold text-white mb-3" style="line-height: 1.05; letter-spacing: -1px;">
+                READY TO TAKE YOUR<br>BUSINESS DIGITAL?
+            </h2>
+            <p class="text-white-50 mb-4" style="font-size: 0.95rem;">
+                Let your customers order easily while you focus on growing your business.
+            </p>
+
+            <!-- Primary Action Buttons -->
+            <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap mb-4">
+                <a href="https://wa.me/601169893389?text=Hi%20Kedai%20WA%20Kamek%2C%20I%20want%20to%20get%20my%20store%20set%20up!" target="_blank" class="btn custom-orange-btn px-4 py-2 shadow-sm" style="font-size: 0.85rem;">
+                    GET YOUR STORE SET UP
+                </a>
+                <a href="/simple_ordering_multivendor/login.php" class="btn btn-outline-light rounded-pill px-4 py-2 fw-bold" style="font-size: 0.85rem; border-color: rgba(255,255,255,0.4);">
+                    LIST MY STORE
+                </a>
+            </div>
+
+            <!-- Direct WhatsApp Number Pills -->
+            <div class="pt-2">
+                <p class="text-white-50 fw-bold text-uppercase mb-2" style="font-size: 0.68rem; letter-spacing: 1.2px;">
+                    CHAT WITH US ON WHATSAPP
+                </p>
+                <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+                    <a href="https://wa.me/601169893389" target="_blank" class="wa-number-pill">
+                        <i class="fa-solid fa-phone me-2" style="color: #b2ff81; font-size: 0.75rem;"></i> +6011-69893389
+                    </a>
+                    <a href="https://wa.me/60103055330" target="_blank" class="wa-number-pill">
+                        <i class="fa-solid fa-phone me-2" style="color: #b2ff81; font-size: 0.75rem;"></i> +6010-3055330
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- ROW 11: FREQUENTLY ASKED QUESTIONS (Matching Image) -->
+    <!-- ==================================================== -->
+    <section id="faq" class="landing-full-row landing-row-faq shadow-sm">
+        <div class="landing-content-inner container py-2" style="max-width: 820px;">
+            
+            <!-- Section Header -->
+            <div class="text-center mb-5">
+                <p class="fw-bold fst-italic mb-1" style="color: #5b8c3e; font-family: cursive; font-size: 1.15rem;">
+                    Got questions?
+                </p>
+                <h2 class="fw-bold display-5 text-dark mb-0" style="color: #0b291a !important; letter-spacing: -1px;">
+                    FREQUENTLY ASKED
+                </h2>
+            </div>
+
+            <!-- FAQ Accordion List -->
+            <div class="accordion faq-accordion" id="kedaiFaqAccordion">
+                
+                <!-- FAQ Item 1 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeading1">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse1" aria-expanded="false" aria-controls="faqCollapse1">
+                            Does it work for fashion, produce and handmade crafts?
+                        </button>
+                    </h2>
+                    <div id="faqCollapse1" class="accordion-collapse collapse" aria-labelledby="faqHeading1" data-bs-parent="#kedaiFaqAccordion">
+                        <div class="accordion-body">
+                            Yes! Kedai WA Kamek is built for any small business in Malaysia[cite: 3]. Whether you sell local food & beverages, apparel, fresh produce, or handmade crafts, you can set up your custom catalog[cite: 6, 7].
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 2 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeading2">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse2" aria-expanded="false" aria-controls="faqCollapse2">
+                            Do my customers need an account?
+                        </button>
+                    </h2>
+                    <div id="faqCollapse2" class="accordion-collapse collapse" aria-labelledby="faqHeading2" data-bs-parent="#kedaiFaqAccordion">
+                        <div class="accordion-body">
+                            No account or password creation is needed for your customers[cite: 6, 7]. They simply open your store link or scan your QR code[cite: 6, 7], pick their items[cite: 6], add remarks[cite: 1], and submit directly to your WhatsApp[cite: 3, 6].
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 3 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeading3">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse3" aria-expanded="false" aria-controls="faqCollapse3">
+                            Do I need to download an app?
+                        </button>
+                    </h2>
+                    <div id="faqCollapse3" class="accordion-collapse collapse" aria-labelledby="faqHeading3" data-bs-parent="#kedaiFaqAccordion">
+                        <div class="accordion-body">
+                            No app download is required[cite: 6, 7]. Everything runs smoothly through any standard web browser on mobile phones, tablets, or computers[cite: 6, 7].
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 4 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeading4">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse4" aria-expanded="false" aria-controls="faqCollapse4">
+                            Do you charge commission?
+                        </button>
+                    </h2>
+                    <div id="faqHeading4" class="accordion-collapse collapse" aria-labelledby="faqHeading4" data-bs-parent="#kedaiFaqAccordion">
+                        <div class="accordion-body">
+                            We don't take any commission on your sales[cite: 6, 7]. All revenue from your orders belongs 100% to you[cite: 6, 7].
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 5 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeading5">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse5" aria-expanded="false" aria-controls="faqCollapse5">
+                            How do customers pay?
+                        </button>
+                    </h2>
+                    <div id="faqCollapse5" class="accordion-collapse collapse" aria-labelledby="faqHeading5" data-bs-parent="#kedaiFaqAccordion">
+                        <div class="accordion-body">
+                            Payments are handled directly between you and your customer[cite: 7]. When the order arrives via WhatsApp, you can share your DuitNow QR, online bank details, or agree on cash/transfer arrangements[cite: 7].
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 6 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeading6">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse6" aria-expanded="false" aria-controls="faqCollapse6">
+                            What about delivery?
+                        </button>
+                    </h2>
+                    <div id="faqCollapse6" class="accordion-collapse collapse" aria-labelledby="faqHeading6" data-bs-parent="#kedaiFaqAccordion">
+                        <div class="accordion-body">
+                            You coordinate delivery directly with your customer[cite: 7]. You can arrange third-party riders, self-pickups, or postal delivery[cite: 7].
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 7 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeading7">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse7" aria-expanded="false" aria-controls="faqCollapse7">
+                            Can I cancel anytime?
+                        </button>
+                    </h2>
+                    <div id="faqHeading7" class="accordion-collapse collapse" aria-labelledby="faqHeading7" data-bs-parent="#kedaiFaqAccordion">
+                        <div class="accordion-body">
+                            Yes, you enjoy complete flexibility without complicated contracts or long-term lock-ins[cite: 6, 7].
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 8 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqHeading8">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse8" aria-expanded="false" aria-controls="faqCollapse8">
+                            How do I get listed in Explore Kedai?
+                        </button>
+                    </h2>
+                    <div id="faqHeading8" class="accordion-collapse collapse" aria-labelledby="faqHeading8" data-bs-parent="#kedaiFaqAccordion">
+                        <div class="accordion-body">
+                            Simply click the "Get Your Store Set Up" button or message our team via WhatsApp to get your store onboarded into the directory[cite: 7].
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
 <?php 
 }
 require_once 'includes/footer.php'; 

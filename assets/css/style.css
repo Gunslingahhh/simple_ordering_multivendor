@@ -11,6 +11,53 @@
     color: #1a1a1a !important;
 }
 
+.bg-cream {
+    background-color: #e1dbd0;
+}
+
+body {
+        background-color: #f8f9fa;
+        margin: 0;
+        overflow-x: hidden;
+    }
+
+    /* Base full-width row styling */
+    .landing-full-row {
+        width: 100vw;
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+        padding: 5rem 1rem;
+    }
+
+    /* Alternating background colors matching your design */
+    .bg-green-hero {
+        background-color: #0b291a;
+        color: #ffffff;
+    }
+    .bg-cream-tint {
+        background-color: #f3f4ee;
+        color: #1a1a1a;
+    }
+    .bg-white-clean {
+        background-color: #ffffff;
+        color: #1a1a1a;
+        border-top: 1px solid #eaeaea;
+        border-bottom: 1px solid #eaeaea;
+    }
+    .bg-green-dark {
+        background-color: #0b291a;
+        color: #ffffff;
+    }
+
+    /* Inner wrapper to keep text/cards centered and aligned nicely */
+    .landing-content-inner {
+        max-width: 1140px;
+        margin: 0 auto;
+    }
+
 .bg-main:hover {
     background-color: var(--brand-color-hover) !important;
     color: #000000 !important;

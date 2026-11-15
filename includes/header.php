@@ -15,47 +15,126 @@ if (session_status() === PHP_SESSION_NONE) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/simple_ordering_multivendor/assets/css/style.css">
+    <style>
+        /* Custom Header Styling matching the reference layout */
+        .custom-navbar {
+            background-color: #e1dbd0 !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+        .nav-link-custom {
+            color: #2c3e35 !important;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s ease;
+        }
+        .nav-link-custom:hover {
+            color: #1e392a !important;
+        }
+        .explore-pill-btn {
+            background-color: #dce5d9;
+            color: #1e392a;
+            border-radius: 50rem;
+            padding: 0.4rem 1.1rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            border: none;
+            text-decoration: none;
+        }
+        .new-badge {
+            background-color: #1e392a;
+            color: #ffffff;
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 50rem;
+            margin-left: 0.5rem;
+            letter-spacing: 0.5px;
+        }
+        .cta-orange-btn {
+            background: linear-gradient(135deg, #ffa726, #fb8c00);
+            color: #ffffff !important;
+            border-radius: 50rem;
+            padding: 0.5rem 1.4rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: none;
+            box-shadow: 0 4px 10px rgba(251, 140, 0, 0.25);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
+        }
+        .cta-orange-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(251, 140, 0, 0.35);
+        }
+    </style>
 </head>
 <body class="bg-light d-flex flex-column min-vh-100">
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-2">
-        <div class="container">
-            <a class="navbar-brand py-0" href="/simple_ordering_multivendor/index.php">
-                <img src="/simple_ordering_multivendor/assets/logo.png" alt="Kedai-WA-Kamek Logo" height="60" class="d-inline-block align-text-top">
+    <!-- NAVIGATION HEADER -->
+    <nav class="navbar navbar-expand-lg custom-navbar sticky-top shadow-sm">
+        <div class="container-fluid px-4">
+            
+            <!-- 1. Logo on the Left -->
+            <a class="navbar-brand py-0 me-4" href="/simple_ordering_multivendor/index.php">
+                <img src="/simple_ordering_multivendor/assets/logo.png" alt="Kedai-WA-Kamek Logo" height="45" class="d-inline-block align-text-top">
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+
+            <!-- Mobile Toggle Button -->
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
+
+            <!-- 2. Centered Navigation Links & Right CTA -->
+            <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
+                
+                <!-- Center Links -->
+                <ul class="navbar-nav mx-auto align-items-center gap-lg-3 my-2 my-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/simple_ordering_multivendor/index.php#how-it-works" class="explore-pill-btn shadow-sm">
+                            <i class="fa-solid fa-seedling text-success me-1"></i> Explore Kedai <span class="new-badge">NEW</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#how-it-works">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#categories">Categories</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#faq">FAQ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/login.php">Contact</a>
+                    </li>
+                </ul>
+
+                <!-- 3. Right CTA Button -->
+                <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <?php if ($_SESSION['role'] === 'admin'): ?>
-                            <li class="nav-item">
-                                <a class="nav-link text-white fw-semibold" href="/simple_ordering_multivendor/admin/dashboard.php">
-                                    <i class="fa-solid fa-user-shield me-1 text-main"></i> Admin Dashboard
-                                </a>
-                            </li>
+                            <a href="/simple_ordering_multivendor/admin/dashboard.php" class="btn btn-dark btn-sm rounded-pill px-3 fw-bold">Admin Dashboard</a>
                         <?php elseif ($_SESSION['role'] === 'vendor'): ?>
-                            <li class="nav-item">
-                                <a class="nav-link text-white fw-semibold" href="/simple_ordering_multivendor/vendor/dashboard.php">
-                                    <i class="fa-solid fa-store me-1 text-main"></i> Vendor Dashboard
-                                </a>
-                            </li>
+                            <a href="/simple_ordering_multivendor/vendor/dashboard.php" class="btn btn-dark btn-sm rounded-pill px-3 fw-bold">Vendor Dashboard</a>
                         <?php endif; ?>
-                        <li class="nav-item">
-                            <a class="nav-link btn btn-main btn-sm ms-2 px-3 fw-bold shadow-sm" href="/simple_ordering_multivendor/logout.php">
-                                Logout
-                            </a>
-                        </li>
+                        <a href="/simple_ordering_multivendor/logout.php" class="btn btn-outline-dark btn-sm rounded-pill px-3">Logout</a>
                     <?php else: ?>
-                        <li class="nav-item">
-                            <a class="nav-link btn btn-outline-main btn-sm ms-2 px-3" href="/simple_ordering_multivendor/login.php">
-                                <i class="fa-solid fa-right-to-bracket me-1"></i> Login
-                            </a>
-                        </li>
+                        <a href="#become-vendor" class="cta-orange-btn">
+                            GET YOUR DIGITAL STORE
+                        </a>
                     <?php endif; ?>
-                </ul>
+                </div>
+
             </div>
         </div>
     </nav>
-    <main class="container my-4 flex-grow-1">
+
+    <main class="container flex-grow-1">
