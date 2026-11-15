@@ -96,7 +96,7 @@ if (session_status() === PHP_SESSION_NONE) {
                         <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a href="/simple_ordering_multivendor/index.php#how-it-works" class="explore-pill-btn shadow-sm">
+                        <a href="/simple_ordering_multivendor/index.php#explore" class="explore-pill-btn shadow-sm">
                             <i class="fa-solid fa-seedling text-success me-1"></i> Explore Kedai <span class="new-badge">NEW</span>
                         </a>
                     </li>
@@ -113,7 +113,7 @@ if (session_status() === PHP_SESSION_NONE) {
                         <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#faq">FAQ</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/login.php">Contact</a>
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#become-vendor">Contact</a>
                     </li>
                 </ul>
 

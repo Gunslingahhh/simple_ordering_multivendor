@@ -858,7 +858,7 @@ if (!empty($vendor_token)) {
     <!-- ==================================================== -->
     <!-- ROW 2: LIGHT CREAM CATEGORY GRID -->
     <!-- ==================================================== -->
-    <section class="landing-full-row landing-row-cream shadow-sm text-center">
+    <section id="categories" class="landing-full-row landing-row-cream shadow-sm text-center">
         <div class="landing-content-inner container py-3">
             <small class="text-muted text-uppercase fw-bold tracking-wider" style="letter-spacing: 1px;">Fresh picks for home, happy for customer</small>
             <h2 class="fw-bold text-dark display-6 mb-4" style="letter-spacing: -0.5px;">ONE PLATFORM.<br>EVERY KIND OF KEDAI.</h2>
@@ -895,7 +895,7 @@ if (!empty($vendor_token)) {
     <!-- ==================================================== -->
     <!-- ROW 3: FEATURE HIGHLIGHTS -->
     <!-- ==================================================== -->
-    <section class="landing-full-row landing-row-white shadow-sm text-center">
+    <section id="features" class="landing-full-row landing-row-white shadow-sm text-center">
         <div class="landing-content-inner container py-3">
             <small class="text-muted text-uppercase fw-bold tracking-wider" style="letter-spacing: 1px;">Made for our Malaysian business</small>
             <h3 class="fw-bold text-dark display-6 mb-5">LESS CHAT. MORE ORDERS.</h3>
@@ -936,7 +936,7 @@ if (!empty($vendor_token)) {
     <!-- ==================================================== -->
     <!-- ROW 4: HOW DOES IT WORK -->
     <!-- ==================================================== -->
-    <section class="landing-full-row landing-row-how-it-works shadow-sm">
+    <section id="how-it-works" class="landing-full-row landing-row-how-it-works shadow-sm">
         <div class="landing-content-inner container py-3">
             <div class="text-center mb-5">
                 <small class="text-muted text-uppercase fw-bold" style="letter-spacing: 1px;">Simple Steps. Easy Ordering.</small>
@@ -1155,7 +1155,7 @@ if (!empty($vendor_token)) {
     <!-- ==================================================== -->
     <!-- ROW 8: EXPLORE KEDAI DIRECTORY (Matching Image 4, Bottom) -->
     <!-- ==================================================== -->
-    <section class="landing-full-row landing-row-explore shadow-sm">
+    <section id="explore" class="landing-full-row landing-row-explore shadow-sm">
         <div class="landing-content-inner container py-3">
             <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
                 <div>
