@@ -127,7 +127,7 @@ if (session_status() === PHP_SESSION_NONE) {
                         <?php endif; ?>
                         <a href="/simple_ordering_multivendor/logout.php" class="btn btn-outline-dark btn-sm rounded-pill px-3">Logout</a>
                     <?php else: ?>
-                        <a href="#become-vendor" class="cta-orange-btn">
+                        <a href="https://api.whatsapp.com/send/?phone=601169893389&text=Hi+Kedai+WA+Kamek%2C+I%27d+like+to+get+my+digital+store+set+up.&type=phone_number&app_absent=0" target="_blank" class="cta-orange-btn">
                             GET YOUR DIGITAL STORE
                         </a>
                     <?php endif; ?>
