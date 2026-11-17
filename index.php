@@ -1695,7 +1695,7 @@ if (!empty($vendor_token)) {
     <!-- ==================================================== -->
     <!-- ROW 1: HERO SECTION WITH 4-IMAGE BACKGROUND SLIDESHOW -->
     <!-- ==================================================== -->
-    <section class="landing-full-row landing-hero-green-v2 shadow-sm">
+    <section id="home" class="landing-full-row landing-hero-green-v2 shadow-sm">
         
         <!-- Background Slideshow Layer -->
         <div class="hero-slideshow">
@@ -1758,7 +1758,7 @@ if (!empty($vendor_token)) {
     <!-- ==================================================== -->
     <!-- ROW 2: ONE PLATFORM. EVERY KIND OF KEDAI. -->
     <!-- ==================================================== -->
-    <section class="landing-row-platform shadow-sm">
+    <section id="categories" class="landing-row-platform shadow-sm">
         <div class="landing-content-inner container py-2">
             
             <!-- Section Header -->
@@ -2454,7 +2454,7 @@ if (!empty($vendor_token)) {
     <!-- ==================================================== -->
     <!-- ROW 10: READY TO TAKE YOUR BUSINESS DIGITAL? (CTA) -->
     <!-- ==================================================== -->
-    <section class="landing-row-cta-banner shadow-sm">
+    <section id="become-vendor" class="landing-row-cta-banner shadow-sm">
         <div class="landing-content-inner container py-2">
             
             <!-- Header & Subtext -->
@@ -2473,7 +2473,7 @@ if (!empty($vendor_token)) {
                 <a href="https://api.whatsapp.com/send/?phone=601169893389&text=Hi+Kedai+WA+Kamek%2C+I%27d+like+to+get+my+digital+store+set+up.&type=phone_number&app_absent=0" target="_blank" class="btn btn-cta-orange">
                     GET YOUR STORE SET UP
                 </a>
-                <a href="#become-vendor" class="btn btn-cta-outline">
+                <a href="https://api.whatsapp.com/send/?phone=601169893389&text=Hi+Kedai+WA+Kamek%2C+I+have+a+store+with+you+and+I%27d+like+it+listed+in+Explore+Kedai.&type=phone_number&app_absent=0" target="_blank" class="btn btn-cta-outline">
                     LIST MY STORE
                 </a>
             </div>

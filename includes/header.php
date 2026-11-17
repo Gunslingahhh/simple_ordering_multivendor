@@ -93,15 +93,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 <!-- Center Links -->
                 <ul class="navbar-nav mx-auto align-items-center gap-lg-3 my-2 my-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/simple_ordering_multivendor/index.php#explore" class="explore-pill-btn shadow-sm">
-                            <i class="fa-solid fa-seedling text-success me-1"></i> Explore Kedai <span class="new-badge">NEW</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#how-it-works">How It Works</a>
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#home">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#categories">Categories</a>
@@ -110,10 +102,18 @@ if (session_status() === PHP_SESSION_NONE) {
                         <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#features">Features</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#faq">FAQ</a>
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#how-it-works">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/simple_ordering_multivendor/index.php#explore" class="explore-pill-btn shadow-sm">
+                            <i class="fa-solid fa-seedling text-success me-1"></i> Explore Kedai <span class="new-badge">NEW</span>
+                        </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#become-vendor">Contact</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="/simple_ordering_multivendor/index.php#faq">FAQ</a>
                     </li>
                 </ul>
 
