@@ -2,6 +2,9 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Get the current file name (e.g., 'login.php', 'index.php')
+$current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -72,7 +75,7 @@ if (session_status() === PHP_SESSION_NONE) {
     </style>
 </head>
 <body class="bg-light d-flex flex-column min-vh-100">
-
+    <?php if ($current_page !== 'login.php'): ?>
     <!-- NAVIGATION HEADER -->
     <nav class="navbar navbar-expand-lg custom-navbar sticky-top shadow-sm">
         <div class="container-fluid px-4">
@@ -136,5 +139,5 @@ if (session_status() === PHP_SESSION_NONE) {
             </div>
         </div>
     </nav>
-
+    <?php endif; ?>
     <main class="container flex-grow-1">
