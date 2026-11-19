@@ -7,276 +7,404 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// ----------------------------------------------------
-// 1. FETCH OVERALL SYSTEM METRICS FOR REPORTING
-// ----------------------------------------------------
-
-// Total Vendors Count & Status breakdown
-$stmtVendorsCount = $pdo->query("
-    SELECT 
-        COUNT(*) as total_vendors,
-        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_vendors,
-        SUM(CASE WHEN status = 'open' AND is_active = 1 THEN 1 ELSE 0 END) as open_vendors
-    FROM vendors
-");
-$vendorStats = $stmtVendorsCount->fetch();
-
-// Total Menu Items & Availability breakdown
-$stmtMenuStats = $pdo->query("
-    SELECT 
-        COUNT(*) as total_items,
-        SUM(CASE WHEN is_available = 1 THEN 1 ELSE 0 END) as available_items,
-        SUM(CASE WHEN is_available = 0 THEN 1 ELSE 0 END) as unavailable_items
-    FROM menu_items
-");
-$menuStats = $stmtMenuStats->fetch();
-
-// ----------------------------------------------------
-// 2. FETCH VENDOR PERFORMANCE & DETAILS
-// ----------------------------------------------------
-$stmtVendors = $pdo->query("
-    SELECT 
-        v.*, 
-        u.username,
-        COUNT(m.id) as total_items,
-        SUM(CASE WHEN m.is_available = 1 THEN 1 ELSE 0 END) as available_items,
-        COALESCE(SUM(o.total_amount), 0) as total_revenue,
-        COUNT(o.id) as total_orders
-    FROM vendors v
-    JOIN users u ON v.user_id = u.id
-    LEFT JOIN menu_items m ON v.id = m.vendor_id
-    LEFT JOIN orders o ON v.id = o.vendor_id
-    GROUP BY v.id
-    ORDER BY total_revenue DESC
-");
+// Fetch metrics & vendors from database
+$stmtVendors = $pdo->query("SELECT v.*, u.username FROM vendors v JOIN users u ON v.user_id = u.id ORDER BY v.id DESC");
 $vendors = $stmtVendors->fetchAll();
 
-// Base URL helper
-$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-$host = $_SERVER['HTTP_HOST'];
-$baseUrl = "$protocol://$host/simple_ordering_multivendor/index.php?token=";
+$total_vendors = count($vendors);
+$active_vendors = 0;
+$paused_vendors = 0;
+
+foreach ($vendors as $v) {
+    if (($v['status'] ?? 'open') === 'open') {
+        $active_vendors++;
+    } else {
+        $paused_vendors++;
+    }
+}
+
+// Total products across all vendors
+$stmtProdCount = $pdo->query("SELECT COUNT(*) FROM menu_items");
+$total_products = $stmtProdCount->fetchColumn();
 ?>
-<?php require_once '../includes/header.php'; ?>
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ringkasan — Admin Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-green: #0b291a;
+            --accent-lime: #b2ff81;
+            --bg-cream: #f3f4ee;
+        }
+        body {
+            background-color: var(--bg-cream);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            color: #1a1a1a;
+        }
+        .dashboard-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+        .dash-sidebar {
+            width: 260px;
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+        }
+        .sidebar-brand-area {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .sidebar-menu {
+            padding: 1rem;
+            list-style: none;
+            margin: 0;
+            flex-grow: 1;
+        }
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.75rem 1rem;
+            color: #475569;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            margin-bottom: 0.25rem;
+        }
+        .sidebar-menu li a:hover {
+            background-color: #f8fafc;
+            color: #0b291a;
+        }
+        .sidebar-menu li a.active {
+            background-color: #eaf3ed;
+            color: #0b291a;
+        }
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid #f1f5f9;
+        }
+        .vendor-profile-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .dash-main {
+            margin-left: 260px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            width: calc(100% - 260px);
+        }
+        .dash-topbar {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.85rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dash-content-body {
+            padding: 2rem 2.5rem;
+            width: 100%;
+        }
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            height: 100%;
+        }
+        .metric-title {
+            color: #64748b;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .metric-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #0b291a;
+            margin-bottom: 0;
+        }
+        .admin-main-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .vendor-row-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.15s ease;
+        }
+        .vendor-row-item:last-child {
+            border-bottom: none;
+        }
+        .vendor-row-item:hover {
+            background-color: #fafafa;
+        }
+        .search-input-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 50rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            max-width: 320px;
+        }
+        .search-input-box input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+        .form-check-input:checked {
+            background-color: #198754;
+            border-color: #198754;
+        }
+        .btn-daftar-peniaga {
+            background-color: #0b291a;
+            color: #ffffff;
+            border-radius: 50rem;
+            padding: 0.6rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 10px rgba(11, 41, 26, 0.2);
+            transition: background 0.2s ease;
+        }
+        .btn-daftar-peniaga:hover {
+            background-color: #16422b;
+            color: #ffffff;
+        }
+        .btn-pulihkan {
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #0b291a;
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.9rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .btn-pulihkan:hover {
+            background: #f1f5f9;
+        }
+    </style>
+</head>
+<body>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-secondary">
-        <i class="fa-solid fa-chart-line me-2 text-warning"></i>Admin Performance Dashboard
-    </h2>
-    <a href="add_vendor.php" class="btn btn-main fw-bold">
-        <i class="fa-solid fa-plus me-1"></i> Add New Vendor
-    </a>
-</div>
+<div class="dashboard-wrapper">
+    
+    <!-- Include Admin Sidenav -->
+    <?php include 'sidenav.php'; ?>
 
-<!-- ==================================================== -->
-<!-- SUMMARY ANALYTICS CARDS (METRICS FOR REPORTING)      -->
-<!-- ==================================================== -->
-<div class="row g-3 mb-4">
-    <!-- Total Vendors -->
-    <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-primary h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Total Vendors</h6>
-                        <h3 class="fw-bold mb-0 text-dark"><?= $vendorStats['total_vendors'] ?></h3>
-                        <small class="text-success fw-semibold"><?= $vendorStats['active_vendors'] ?> Active Accounts</small>
+    <!-- Main Content -->
+    <div class="dash-main">
+        <!-- Topbar -->
+        <div class="dash-topbar">
+            <div>
+                <span class="text-muted small">Admin platform</span>
+                <h5 class="fw-bold mb-0 text-dark">Ringkasan</h5>
+            </div>
+            <div>
+                <a href="#" class="btn-pulihkan" onclick="alert('Demo data restored successfully!');">
+                    <i class="fa-solid fa-rotate-right" style="font-size: 0.75rem;"></i> Pulihkan data demo
+                </a>
+            </div>
+        </div>
+
+        <!-- Content Body -->
+        <div class="dash-content-body">
+            
+            <!-- Metrics 4-Card Grid -->
+            <div class="row row-cols-1 row-cols-md-4 g-3 mb-4">
+                <div class="col">
+                    <div class="metric-card">
+                        <div class="metric-title">
+                            Jumlah peniaga
+                            <i class="fa-solid fa-store text-muted"></i>
+                        </div>
+                        <div class="metric-value"><?= $total_vendors ?></div>
                     </div>
-                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
-                        <i class="fa-solid fa-store fs-3"></i>
+                </div>
+                <div class="col">
+                    <div class="metric-card">
+                        <div class="metric-title">
+                            Aktif
+                            <i class="fa-solid fa-circle-check text-success"></i>
+                        </div>
+                        <div class="metric-value"><?= $active_vendors ?></div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="metric-card">
+                        <div class="metric-title">
+                            Tamat / dijeda
+                            <i class="fa-solid fa-circle-xmark text-danger"></i>
+                        </div>
+                        <div class="metric-value"><?= $paused_vendors ?></div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="metric-card">
+                        <div class="metric-title">
+                            Jumlah produk
+                            <i class="fa-solid fa-cube text-muted"></i>
+                        </div>
+                        <div class="metric-value"><?= $total_products ?></div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Currently Open Stores -->
-    <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-success h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+            <!-- Main Vendors List Card -->
+            <div class="admin-main-card">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
                     <div>
-                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Open Stores</h6>
-                        <h3 class="fw-bold mb-0 text-dark"><?= $vendorStats['open_vendors'] ?></h3>
-                        <small class="text-muted">
-                            <?= $vendorStats['total_vendors'] > 0 ? round(($vendorStats['open_vendors'] / $vendorStats['total_vendors']) * 100, 1) : 0 ?>% Open Rate
-                        </small>
+                        <h4 class="fw-bold text-dark mb-1 fs-5">Peniaga berdaftar</h4>
+                        <p class="text-muted small mb-0"><?= $total_vendors ?> peniaga</p>
                     </div>
-                    <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
-                        <i class="fa-solid fa-door-open fs-3"></i>
+                    <div>
+                        <a href="add_vendor.php" class="btn-daftar-peniaga">
+                            <i class="fa-solid fa-plus"></i> Daftar peniaga
+                        </a>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Total Listed Menu Items -->
-    <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-warning h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Total Menu Items</h6>
-                        <h3 class="fw-bold mb-0 text-dark"><?= $menuStats['total_items'] ?></h3>
-                        <small class="text-success fw-semibold"><?= $menuStats['available_items'] ?> Available</small>
-                    </div>
-                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
-                        <i class="fa-solid fa-utensils fs-3"></i>
+                <!-- Search Filter Bar -->
+                <div class="mb-4">
+                    <div class="search-input-box">
+                        <i class="fa-solid fa-magnifying-glass text-muted small"></i>
+                        <input type="text" id="adminVendorSearch" placeholder="Cari nama, slug atau bandar" onkeyup="filterAdminVendors()">
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Menu Health / Availability Rate -->
-    <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-info h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Menu Health</h6>
-                        <?php 
-                            $availabilityRate = $menuStats['total_items'] > 0 
-                                ? round(($menuStats['available_items'] / $menuStats['total_items']) * 100, 1) 
-                                : 0;
-                        ?>
-                        <h3 class="fw-bold mb-0 text-dark"><?= $availabilityRate ?>%</h3>
-                        <small class="text-muted"><?= $menuStats['unavailable_items'] ?> Items Unavailable</small>
-                    </div>
-                    <div class="bg-info bg-opacity-10 text-info rounded-circle p-3">
-                        <i class="fa-solid fa-circle-check fs-3"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ==================================================== -->
-<!-- VENDOR PERFORMANCE MONITORING TABLE                  -->
-<!-- ==================================================== -->
-<div class="card shadow-sm">
-    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list me-2"></i>Vendor Performance Overview</h5>
-        <span class="badge bg-secondary"><?= count($vendors) ?> Vendors</span>
-    </div>
-    <div class="card-body p-0">
-        <?php if (empty($vendors)): ?>
-            <p class="text-muted text-center py-4">No vendors registered yet.</p>
-        <?php else: ?>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Logo</th>
-                            <th>Store Details</th>
-                            <th>WhatsApp</th>
-                            <th>Total Revenue</th>
-                            <th>Store Link & QR</th>
-                            <th>Status</th>
-                            <th>Menu Metrics</th>
-                            <th class="text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <!-- Vendor Items List -->
+                <?php if (empty($vendors)): ?>
+                    <div class="text-center py-5 text-muted">Tiada peniaga berdaftar ditemui.</div>
+                <?php else: ?>
+                    <div id="vendorListContainer">
                         <?php foreach ($vendors as $v): ?>
                             <?php 
-                                $vendorMenuRate = $v['total_items'] > 0 
-                                    ? round(($v['available_items'] / $v['total_items']) * 100) 
-                                    : 0;
-                                $storeLink = $baseUrl . $v['token'];
-                                $qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($storeLink);
+                                $v_slug = $v['username'] ?? 'store';
+                                // Count products for this vendor
+                                $stmtPCount = $pdo->prepare("SELECT COUNT(*) FROM menu_items WHERE vendor_id = ?");
+                                $stmtPCount->execute([$v['id']]);
+                                $v_prod_count = $stmtPCount->fetchColumn();
                             ?>
-                            <tr>
-                                <td>
+                            <div class="vendor-row-item">
+                                <!-- Left: Logo & Info -->
+                                <div class="d-flex align-items-center gap-3 overflow-hidden">
                                     <img src="../uploads/vendors/<?= htmlspecialchars($v['logo'] ?: 'default_logo.png') ?>" 
-                                         width="45" height="45" class="rounded-circle object-fit-cover shadow-sm" alt="">
-                                </td>
-                                <td>
-                                    <span class="fw-bold d-block text-dark"><?= htmlspecialchars($v['store_name']) ?></span>
-                                    <small class="text-muted"><i class="fa-solid fa-user me-1"></i><?= htmlspecialchars($v['username']) ?></small>
-                                </td>
-                                <td>
-                                    <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $v['whatsapp_number']) ?>" 
-                                       target="_blank" class="text-decoration-none text-success fw-semibold small">
-                                        <i class="fa-brands fa-whatsapp me-1 fs-6"></i><?= htmlspecialchars($v['whatsapp_number']) ?>
-                                    </a>
-                                </td>
-                                <td>
-                                    <span class="fw-bold text-success">RM<?= number_format($v['total_revenue'], 2) ?></span>
-                                    <br><small class="text-muted"><?= $v['total_orders'] ?> Orders Placed</small>
-                                </td>
-                                <td>
+                                         alt="Logo" width="48" height="48" 
+                                         class="rounded-circle object-fit-cover border shadow-sm flex-shrink-0">
+                                    <div class="overflow-hidden">
+                                        <div class="fw-bold text-dark text-truncate vendor-search-text">
+                                            <?= htmlspecialchars($v['store_name']) ?> 
+                                            <span class="text-muted fw-normal" style="font-size: 0.75rem;">v<?= str_pad($v['id'], 3, '0', STR_PAD_LEFT) ?></span>
+                                        </div>
+                                        <div class="text-muted small text-truncate vendor-search-text">
+                                            /store?vendor=<?= htmlspecialchars($v_slug) ?> &bull; <?= htmlspecialchars($v['city'] ?? 'Kuching') ?> &bull; <?= $v_prod_count ?> produk
+                                        </div>
+                                        <div class="text-success small fw-semibold" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-circle" style="font-size: 0.45rem;"></i> Langganan aktif &bull; 24 hari lagi
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Controls & Actions -->
+                                <div class="d-flex align-items-center gap-3 flex-shrink-0">
                                     <div class="d-flex align-items-center gap-2">
-                                        <a href="<?= htmlspecialchars($storeLink) ?>" target="_blank" class="btn btn-sm btn-outline-dark" title="Open Menu Link">
-                                            <i class="fa-solid fa-link"></i>
-                                        </a>
-                                        <!-- Button trigger modal for QR -->
-                                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#qrModal<?= $v['id'] ?>" title="View QR Code">
-                                            <i class="fa-solid fa-qrcode"></i>
-                                        </button>
+                                        <span class="small text-muted">Jeda</span>
+                                        <div class="form-check form-switch m-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" checked title="Status aktif/jeda">
+                                        </div>
+                                        <span class="small fw-semibold text-success">Aktif</span>
                                     </div>
 
-                                    <!-- QR Code Modal for each vendor -->
-                                    <div class="modal fade" id="qrModal<?= $v['id'] ?>" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered modal-sm">
-                                            <div class="modal-content">
-                                                <div class="modal-header bg-dark text-white py-2">
-                                                    <h6 class="modal-title fw-bold"><?= htmlspecialchars($v['store_name']) ?> QR</h6>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body text-center p-4">
-                                                    <div class="bg-light p-3 rounded mb-3 border">
-                                                        <img src="<?= $qrCodeUrl ?>" alt="QR Code" width="150" height="150" class="img-fluid">
-                                                    </div>
-                                                    <a href="<?= $qrCodeUrl ?>" download="<?= htmlspecialchars($v['store_name']) ?>_QR.png" target="_blank" class="btn btn-sm btn-success w-100 fw-bold">
-                                                        <i class="fa-solid fa-download me-1"></i> Download QR
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div class="d-flex align-items-center gap-2 ms-2">
+                                        <button class="btn btn-sm btn-light border text-secondary" title="Salin pautan" onclick="alert('Pautan disalin!');">
+                                            <i class="fa-regular fa-copy" style="font-size: 0.75rem;"></i>
+                                        </button>
+                                        <a href="impersonate.php?id=<?= $v['id'] ?>" class="btn btn-sm btn-light border text-secondary" title="Log masuk sebagai peniaga">
+                                            <i class="fa-solid fa-right-to-bracket" style="font-size: 0.75rem;"></i>
+                                        </a>
+                                        <a href="edit_vendor.php?id=<?= $v['id'] ?>" class="btn btn-sm btn-light border text-secondary" title="Sunting">
+                                            <i class="fa-solid fa-pen" style="font-size: 0.75rem;"></i>
+                                        </a>
+                                        <a href="delete_vendor.php?id=<?= $v['id'] ?>" class="btn btn-sm btn-light border text-danger" title="Padam" onclick="return confirm('Padam peniaga ini?');">
+                                            <i class="fa-solid fa-trash" style="font-size: 0.75rem;"></i>
+                                        </a>
                                     </div>
-                                </td>
-                                <td>
-                                    <?php if ($v['status'] === 'open'): ?>
-                                        <span class="badge bg-success"><i class="fa-solid fa-door-open me-1"></i>Open</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-danger"><i class="fa-solid fa-door-closed me-1"></i>Closed</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if ($v['is_active']): ?>
-                                        <span class="badge bg-primary">Active</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary">Inactive</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="me-2 fw-bold small text-secondary">
-                                            <?= $v['total_items'] ?> Items (<?= $vendorMenuRate ?>% Avail.)
-                                        </div>
-                                    </div>
-                                    <div class="progress" style="height: 6px; width: 140px;">
-                                        <div class="progress-bar bg-success" role="progressbar" 
-                                             style="width: <?= $vendorMenuRate ?>%" 
-                                             aria-valuenow="<?= $vendorMenuRate ?>" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </td>
-                                <td class="text-center">
-                                    <a href="edit_vendor.php?id=<?= $v['id'] ?>" class="btn btn-sm btn-outline-primary" title="Edit Vendor">
-                                        <i class="fa-solid fa-pen"></i>
-                                    </a>
-                                    <a href="delete_vendor.php?id=<?= $v['id'] ?>" class="btn btn-sm btn-outline-danger btn-delete" title="Delete Vendor">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </a>
-                                </td>
-                            </tr>
+                                </div>
+                            </div>
                         <?php endforeach; ?>
-                    </tbody>
-                </table>
+                    </div>
+                <?php endif; ?>
+
             </div>
-        <?php endif; ?>
+
+            <div class="text-muted text-center small pt-5">
+                Kedai WA Kamek Admin Platform
+            </div>
+
+        </div>
     </div>
+
 </div>
 
-<?php require_once '../includes/footer.php'; ?>
+<!-- Search Filter Script -->
+<script>
+function filterAdminVendors() {
+    let input = document.getElementById('adminVendorSearch').value.toLowerCase();
+    let rows = document.getElementsByClassName('vendor-row-item');
+    
+    for (let i = 0; i < rows.length; i++) {
+        let text = rows[i].innerText.toLowerCase();
+        if (text.includes(input)) {
+            rows[i].style.display = "";
+        } else {
+            rows[i].style.display = "none";
+        }
+    }
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

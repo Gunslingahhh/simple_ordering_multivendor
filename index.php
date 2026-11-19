@@ -14,188 +14,613 @@ if (!empty($vendor_token)) {
     $vendor = $stmt->fetch();
 
     if (!$vendor) {
-        echo '<div class="alert alert-danger mt-5 text-center shadow-sm py-4">
-                <h4>Store not found or link is invalid.</h4>
+        echo '<div class="alert alert-danger mt-5 text-center shadow-sm py-4 rounded-4 border-0">
+                <h4 class="fw-bold">Store not found or link is invalid.</h4>
                 <p class="text-muted mb-3">Please check the store link and try again.</p>
-                <a href="index.php" class="btn btn-dark fw-bold">Back to Home</a>
+                <a href="index.php" class="btn btn-dark rounded-pill fw-bold px-4">Back to Home</a>
               </div>';
         require_once 'includes/footer.php';
         exit;
     }
 
-    $vendor_id = $vendor['id'];
+    $vendor_id = (int)$vendor['id'];
 
     // Fetch menu items for this vendor (available and in stock)
-    $stmtMenu = $pdo->prepare("SELECT * FROM menu_items WHERE vendor_id = ? AND is_available = 1 AND stock > 0 ORDER BY name ASC");
+    $stmtMenu = $pdo->prepare("SELECT * FROM menu_items WHERE vendor_id = ? AND is_available = 1 AND stock > 0 ORDER BY id ASC");
     $stmtMenu->execute([$vendor_id]);
     $menu_items = $stmtMenu->fetchAll();
+
+    // Build dynamic category pills starting with "Semua"
+    $categories = ['Semua'];
+    foreach ($menu_items as $m) {
+        $cat = trim($m['category'] ?? '');
+        if ($cat !== '' && !in_array($cat, $categories, true)) {
+            $categories[] = $cat;
+        }
+    }
+
+    $is_open = strtolower($vendor['status'] ?? 'open') === 'open';
+    $store_name = $vendor['store_name'] ?? 'Kedai Peniaga';
+    $tagline = !empty($vendor['tagline']) ? $vendor['tagline'] : ($vendor['description'] ?? '');
+    $hours = !empty($vendor['operating_hours']) ? $vendor['operating_hours'] : '10:00 am – 8:00 pm';
+    $city = !empty($vendor['city']) ? $vendor['city'] : (!empty($vendor['address']) ? $vendor['address'] : 'Kuching');
+    $maps_url = !empty($vendor['maps_link'])
+        ? $vendor['maps_link']
+        : 'https://maps.google.com/?q=' . urlencode($city . ', Sarawak');
+
+    $banner_img = !empty($vendor['banner'])
+        ? 'uploads/vendors/' . htmlspecialchars($vendor['banner'])
+        : (!empty($vendor['logo']) ? 'uploads/vendors/' . htmlspecialchars($vendor['logo']) : 'uploads/vendors/default_logo.png');
+
+    $title_size = '1.85rem';
+    if (($vendor['title_size'] ?? '') === 'Kecil') {
+        $title_size = '1.45rem';
+    } elseif (($vendor['title_size'] ?? '') === 'Besar') {
+        $title_size = '2.25rem';
+    }
     ?>
 
-    <!-- 1. HERO BANNER SECTION (Inspired by reference layout) -->
-    <div class="hero-banner p-4 p-md-5 mb-5 shadow-sm">
-        <div class="row align-items-center g-4">
-            <div class="col-lg-6">
-                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill fw-bold mb-3 small">
-                    <i class="fa-solid fa-seedling me-1"></i> FRESHLY MADE, JUST FOR YOU
-                </span>
-                <h1 class="display-4 fw-bold text-dark mb-3" style="line-height: 1.1;">
-                    <?= htmlspecialchars($vendor['store_name']) ?>.
-                </h1>
-                <p class="fs-5 text-muted mb-4">
-                    <?= htmlspecialchars($vendor['description']) ?> Order directly via WhatsApp in a few taps.
-                </p>
-                <div class="d-flex align-items-center text-muted small gap-3 flex-wrap">
-                    <span><i class="fa-solid fa-clock text-success me-1"></i> Made fresh when you order</span>
-                    <span><i class="fa-brands fa-whatsapp text-success me-1"></i> WhatsApp Checkout</span>
-                </div>
-            </div>
-            <div class="col-lg-6 text-center">
-                <div class="position-relative d-inline-block">
-                    <img src="uploads/vendors/<?= htmlspecialchars($vendor['logo'] ?: 'default_logo.png') ?>" 
-                         class="rounded-4 shadow-sm object-fit-cover" 
-                         width="100%" height="280" style="max-width: 450px;" alt="Store Banner">
-                    <div class="position-absolute bottom-0 start-0 m-3 bg-white p-2 px-3 rounded-pill shadow-sm small fw-bold text-dark">
-                        <?php if ($vendor['status'] === 'open'): ?>
-                            <span class="text-success"><i class="fa-solid fa-circle me-1 small"></i> Store Open</span>
-                        <?php else: ?>
-                            <span class="text-danger"><i class="fa-solid fa-circle me-1 small"></i> Store Closed</span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <style>
+        :root {
+            --forest-dark: #0e3b24;
+            --forest-hover: #092818;
+            --surface-bg: #f6f7f5;
+            --card-border: #e5e8e6;
+            --text-main: #18221d;
+            --text-muted-ui: #6c7570;
+            --open-green: #169c57;
+            --stepper-bg: #e7f2ec;
+        }
 
-    <!-- 2. MENU HEADER, SEARCH & CATEGORIES -->
-    <div class="mb-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="fw-bold text-dark mb-0">Our menu.</h2>
-            <span class="text-muted small">Fresh picks. Happy plates.</span>
+        body {
+            background-color: var(--surface-bg);
+            color: var(--text-main);
+        }
+
+        .storefront-container {
+            max-width: 1020px;
+            margin: 0 auto;
+            padding-bottom: 5.5rem;
+        }
+
+        /* Top Banner + White Info Strip */
+        .store-header-card {
+            background-color: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 1.15rem;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+            margin-bottom: 1.15rem;
+        }
+
+        .store-cover-banner {
+            position: relative;
+            height: 235px;
+            background: linear-gradient(120deg, #1b3629 0%, #0e291c 100%);
+            display: flex;
+            align-items: flex-end;
+            padding: 1.5rem 1.75rem;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        @media (min-width: 768px) {
+            .store-cover-banner {
+                height: 265px;
+                padding: 1.75rem 2.25rem;
+            }
+        }
+
+        .store-cover-banner img.cover-photo {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 0;
+        }
+
+        .store-cover-banner::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                180deg,
+                rgba(10, 20, 15, 0.08) 0%,
+                rgba(10, 20, 15, 0.45) 55%,
+                rgba(10, 20, 15, 0.82) 100%
+            );
+            z-index: 1;
+        }
+
+        .store-cover-text {
+            position: relative;
+            z-index: 2;
+        }
+
+        .store-cover-title {
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-bottom: 0.3rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        }
+
+        .store-cover-sub {
+            font-size: 0.92rem;
+            color: rgba(255, 255, 255, 0.92);
+            margin-bottom: 0;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+        }
+
+        .store-meta-strip {
+            padding: 0.8rem 1.5rem;
+            background-color: #ffffff;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1.25rem;
+            font-size: 0.86rem;
+            color: #49544e;
+        }
+
+        .status-open-dot {
+            color: var(--open-green);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .status-open-dot::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--open-green);
+            display: inline-block;
+        }
+
+        .status-closed-dot {
+            color: #dc2626;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .status-closed-dot::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #dc2626;
+            display: inline-block;
+        }
+
+        .map-link-inline {
+            color: var(--text-muted-ui);
+            text-decoration: none;
+        }
+
+        .map-link-inline:hover {
+            color: var(--forest-dark);
+            text-decoration: underline;
+        }
+
+        /* Search Bar */
+        .menu-search-wrapper {
+            background-color: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 0.85rem;
+            padding: 0.68rem 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            margin-bottom: 0.95rem;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+        }
+
+        .menu-search-wrapper input {
+            border: none;
+            outline: none;
+            background: transparent;
+            width: 100%;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        .menu-search-wrapper input::placeholder {
+            color: #9aa39e;
+        }
+
+        /* Category Pills */
+        .category-pills-strip {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.15rem;
+        }
+
+        .cat-filter-btn {
+            border: 1px solid var(--card-border);
+            background-color: #ffffff;
+            color: #37413c;
+            font-size: 0.84rem;
+            font-weight: 500;
+            padding: 0.42rem 1.05rem;
+            border-radius: 50rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .cat-filter-btn:hover {
+            border-color: #cbd2ce;
+            background-color: #f9faf9;
+        }
+
+        .cat-filter-btn.active {
+            background-color: var(--forest-dark);
+            border-color: var(--forest-dark);
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* 2-Column Product Cards Grid */
+        .product-grid-2col {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.95rem;
+        }
+
+        @media (min-width: 768px) {
+            .product-grid-2col {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 1rem;
+            }
+        }
+
+        .catalog-item-card {
+            background-color: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            padding: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+            transition: box-shadow 0.16s ease, border-color 0.16s ease;
+        }
+
+        .catalog-item-card:hover {
+            border-color: #d3dad6;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+        }
+
+        .catalog-thumb {
+            width: 96px;
+            height: 96px;
+            border-radius: 0.75rem;
+            object-fit: cover;
+            flex-shrink: 0;
+            background-color: #f2f4f3;
+            border: 1px solid #eceeed;
+        }
+
+        .catalog-details {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .catalog-title {
+            font-weight: 700;
+            font-size: 0.96rem;
+            color: var(--text-main);
+            margin-bottom: 0.15rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .catalog-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted-ui);
+            margin-bottom: 0.55rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .catalog-bottom-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .catalog-price {
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: var(--text-main);
+            line-height: 1.25;
+        }
+
+        .catalog-avail {
+            font-size: 0.76rem;
+            color: #7c8580;
+            margin-top: 0.1rem;
+        }
+
+        .btn-tambah-pill {
+            background-color: var(--forest-dark);
+            color: #ffffff;
+            border: none;
+            border-radius: 50rem;
+            padding: 0.42rem 0.95rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background-color 0.15s ease;
+        }
+
+        .btn-tambah-pill:hover:not(:disabled) {
+            background-color: var(--forest-hover);
+        }
+
+        .btn-tambah-pill:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        .qty-pill-stepper {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background-color: var(--stepper-bg);
+            padding: 0.22rem 0.35rem;
+            border-radius: 50rem;
+            flex-shrink: 0;
+        }
+
+        .qty-pill-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background-color: var(--forest-dark);
+            color: #ffffff;
+            font-size: 0.72rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .qty-pill-val {
+            font-weight: 700;
+            font-size: 0.84rem;
+            color: var(--forest-dark);
+            min-width: 14px;
+            text-align: center;
+        }
+
+        /* Floating Checkout Bar */
+        .floating-order-bar {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 680px;
+            z-index: 1040;
+            display: none;
+        }
+
+        .floating-order-bar.active {
+            display: block;
+        }
+
+        .floating-order-btn {
+            width: 100%;
+            background-color: var(--forest-dark);
+            color: #ffffff;
+            border: none;
+            border-radius: 50rem;
+            padding: 0.85rem 1.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 10px 26px rgba(14, 59, 36, 0.32);
+            cursor: pointer;
+        }
+    </style>
+
+    <div class="storefront-container" id="storefrontRoot">
+
+        <!-- Hero Banner + Metadata Strip -->
+        <div class="store-header-card">
+            <div class="store-cover-banner">
+                <img src="<?= $banner_img ?>"
+                     alt="<?= htmlspecialchars($store_name) ?>"
+                     class="cover-photo"
+                     onerror="this.style.display='none';">
+                <div class="store-cover-text">
+                    <h1 class="store-cover-title" style="font-size: <?= $title_size ?>;">
+                        <?= htmlspecialchars($store_name) ?>
+                    </h1>
+                    <?php if ($tagline !== ''): ?>
+                        <p class="store-cover-sub"><?= htmlspecialchars($tagline) ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="store-meta-strip">
+                <?php if ($is_open): ?>
+                    <span class="status-open-dot">Buka Sekarang</span>
+                <?php else: ?>
+                    <span class="status-closed-dot">Tutup</span>
+                <?php endif; ?>
+
+                <span><i class="fa-regular fa-clock me-1 text-secondary"></i> <?= htmlspecialchars($hours) ?></span>
+
+                <span>
+                    <i class="fa-solid fa-location-dot me-1 text-secondary"></i>
+                    <?= htmlspecialchars($city) ?>
+                    &middot;
+                    <a href="<?= htmlspecialchars($maps_url) ?>" target="_blank" rel="noopener" class="map-link-inline">Lihat peta</a>
+                </span>
+            </div>
         </div>
 
         <!-- Search Bar -->
-        <div class="mb-3">
-            <div class="input-group search-bar-pill bg-white shadow-sm">
-                <span class="input-group-text bg-transparent border-0 pe-2"><i class="fa-solid fa-search text-muted"></i></span>
-                <input type="text" id="menuSearchInput" class="form-control border-0 shadow-none bg-transparent" placeholder="Search your next favourite...">
-                <span class="input-group-text bg-transparent border-0 text-muted small"><i class="fa-solid fa-sliders me-1"></i> <?= count($menu_items) ?> Items</span>
+        <div class="menu-search-wrapper">
+            <i class="fa-solid fa-magnifying-glass text-secondary"></i>
+            <input type="text" id="storeSearchInput" placeholder="Cari menu" oninput="applyStoreFilters()">
+        </div>
+
+        <!-- Category Pills -->
+        <div class="category-pills-strip" id="storeCategoryPills">
+            <?php foreach ($categories as $idx => $cat): ?>
+                <button type="button"
+                        class="cat-filter-btn <?= $idx === 0 ? 'active' : '' ?>"
+                        data-category="<?= htmlspecialchars($cat) ?>"
+                        onclick="selectStoreCategory(this)">
+                    <?= htmlspecialchars($cat) ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Product Grid -->
+        <?php if (empty($menu_items)): ?>
+            <div class="bg-white rounded-4 p-5 text-center text-muted border">
+                Tiada menu tersedia buat masa ini.
             </div>
-        </div>
+        <?php else: ?>
+            <div class="product-grid-2col" id="storeProductGrid">
+                <?php foreach ($menu_items as $item): ?>
+                    <?php
+                        $item_id = (int)$item['id'];
+                        $item_name = $item['name'];
+                        $item_desc = $item['description'] ?? '';
+                        $item_price = (float)$item['price'];
+                        $item_stock = (int)$item['stock'];
+                        $item_cat = trim($item['category'] ?? '');
+                        $item_img = !empty($item['image'])
+                            ? 'uploads/menu/' . htmlspecialchars($item['image'])
+                            : 'uploads/menu/default_food.png';
+                    ?>
+                    <div class="catalog-item-card store-item-card"
+                         data-category="<?= htmlspecialchars($item_cat) ?>"
+                         data-search="<?= strtolower(htmlspecialchars($item_name . ' ' . $item_desc . ' ' . $item_cat)) ?>">
 
-        <!-- Filter Chips (Static examples matching reference design style) -->
-        <div class="d-flex gap-2 overflow-auto pb-2" style="white-space: nowrap;">
-            <button type="button" class="btn category-pill active px-4 py-2 fw-semibold small">
-                <i class="fa-solid fa-utensils me-1"></i> All items
-            </button>
-            <button type="button" class="btn category-pill px-4 py-2 fw-semibold small">
-                <i class="fa-solid fa-bowl-food me-1"></i> Signature Dishes
-            </button>
-            <button type="button" class="btn category-pill px-4 py-2 fw-semibold small">
-                <i class="fa-solid fa-mug-hot me-1"></i> Drinks
-            </button>
-            <button type="button" class="btn category-pill px-4 py-2 fw-semibold small">
-                <i class="fa-solid fa-cookie-bite me-1"></i> Sweet treats
-            </button>
-        </div>
-    </div>
+                        <img src="<?= $item_img ?>"
+                             alt="<?= htmlspecialchars($item_name) ?>"
+                             class="catalog-thumb"
+                             onerror="this.src='https://placehold.co/160x160/f2f4f3/0e3b24?text=Item';">
 
-    <!-- 3. MAIN LAYOUT: MENU GRID & ORDER CART -->
-    <div class="row pb-5 mb-5">
-        <!-- Menu Grid Column -->
-        <div class="col-lg-8 mb-4">
-            <?php if (empty($menu_items)): ?>
-                <div class="alert bg-white text-center py-5 shadow-sm rounded-4 border-0">
-                    <i class="fa-solid fa-plate-wheat fs-1 text-muted mb-3"></i>
-                    <h5>No menu items available right now.</h5>
-                    <p class="text-muted mb-0">Please check back later!</p>
-                </div>
-            <?php else: ?>
-                <div class="row row-cols-1 row-cols-md-2 g-4" id="menuItemsGrid">
-                    <?php foreach ($menu_items as $item): ?>
-                        <div class="col menu-item-card" data-name="<?= strtolower(htmlspecialchars($item['name'])) ?>">
-                            <div class="card food-card-modern h-100 d-flex flex-column">
-                                <div class="position-relative">
-                                    <img src="uploads/menu/<?= htmlspecialchars($item['image'] ?: 'default_food.png') ?>" 
-                                         class="card-img-top object-fit-cover" height="200" alt="<?= htmlspecialchars($item['name']) ?>">
+                        <div class="catalog-details">
+                            <div class="catalog-title" title="<?= htmlspecialchars($item_name) ?>">
+                                <?= htmlspecialchars($item_name) ?>
+                            </div>
+                            <div class="catalog-desc" title="<?= htmlspecialchars($item_desc) ?>">
+                                <?= htmlspecialchars($item_desc) ?>
+                            </div>
+
+                            <div class="catalog-bottom-row">
+                                <div>
+                                    <div class="catalog-price">RM <?= number_format($item_price, 2) ?></div>
+                                    <div class="catalog-avail">Tersedia</div>
                                 </div>
-                                <div class="card-body d-flex flex-column p-4">
-                                    <div class="text-muted small mb-1">Available Stock: <?= $item['stock'] ?></div>
-                                    <h5 class="card-title fw-bold text-dark mb-2"><?= htmlspecialchars($item['name']) ?></h5>
-                                    <p class="card-text text-muted small flex-grow-1 mb-4"><?= htmlspecialchars($item['description']) ?></p>
-                                    
-                                    <div class="d-flex align-items-center justify-content-between mt-auto">
-                                        <span class="fw-bold text-dark fs-5">RM<?= number_format($item['price'], 2) ?></span>
-                                        
-                                        <?php if ($vendor['status'] === 'open'): ?>
-                                            <!-- Stepper / Add Button Box matching reference style -->
-                                            <button type="button" class="btn btn-dark btn-sm px-4 rounded-pill fw-bold add-to-cart shadow-sm" 
-                                                data-id="<?= $item['id'] ?>" 
-                                                data-name="<?= htmlspecialchars($item['name']) ?>" 
-                                                data-price="<?= $item['price'] ?>"
-                                                data-stock="<?= $item['stock'] ?>"
-                                                style="background-color: #111; color: #fff;">
-                                                + Add
-                                            </button>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary px-3 py-2">Closed</span>
-                                        <?php endif; ?>
-                                    </div>
+
+                                <div id="item-action-<?= $item_id ?>">
+                                    <button type="button"
+                                            class="btn-tambah-pill"
+                                            <?= $is_open ? '' : 'disabled' ?>
+                                            onclick="changeItemQty(<?= $item_id ?>, 1)">
+                                        <i class="fa-solid fa-plus" style="font-size: 0.72rem;"></i> Tambah
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+    </div>
+
+    <!-- Floating Checkout Bar -->
+    <?php if ($is_open): ?>
+        <div class="floating-order-bar" id="floatingOrderBar">
+            <button type="button" class="floating-order-btn" data-bs-toggle="modal" data-bs-target="#checkoutModal">
+                <div class="d-flex align-items-center gap-2 fw-bold">
+                    <span class="badge bg-warning text-dark rounded-pill" id="floatingItemCount">0</span>
+                    <span>Lihat Pesanan &amp; Checkout</span>
                 </div>
-            <?php endif; ?>
+                <span class="fw-bold" id="floatingTotalAmount">RM 0.00</span>
+            </button>
         </div>
+    <?php endif; ?>
 
-        <!-- Desktop Sidebar Order Summary -->
-        <div class="col-lg-4 d-none d-lg-block">
-            <div class="card shadow-sm sticky-top border-0 rounded-4 overflow-hidden" style="top: 2rem;">
-                <div class="card-header bg-dark text-white py-3 px-4" style="background-color: #1e392a !important;">
-                    <h5 class="mb-0 fw-bold"><i class="fa-solid fa-receipt me-2 text-warning"></i>Your Order</h5>
+    <!-- Checkout Modal -->
+    <div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header text-white py-3 px-4" style="background-color: #0e3b24;">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-receipt me-2 text-warning"></i>Your Order
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="card-body p-4 bg-white">
-                    <div class="cart-items-container mb-3" style="max-height: 280px; overflow-y: auto;">
-                        <p class="text-muted text-center py-4">Your order is empty.</p>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
-                        <span>Total:</span>
-                        <span class="cart-total-display text-success">RM0.00</span>
-                    </div>
-                    
-                    <div class="mb-2">
-                        <label class="form-label fw-semibold small text-muted">Your Name *</label>
-                        <input type="text" class="form-control customer-name-input rounded-3 shadow-none" placeholder="e.g. John Doe" required>
+                <div class="modal-body bg-light p-4">
+                    <div class="cart-items-container mb-3 bg-white p-3 rounded-4 shadow-sm border">
+                        <p class="text-muted text-center py-3 mb-0">Your order is empty.</p>
                     </div>
 
-                    <div class="mb-2">
-                        <label class="form-label fw-semibold small text-muted">Phone Number *</label>
-                        <input type="tel" class="form-control customer-phone-input rounded-3 shadow-none" placeholder="e.g. +60123456789" required>
-                    </div>
+                    <div class="bg-white p-4 rounded-4 shadow-sm border mb-3">
+                        <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
+                            <span>Total:</span>
+                            <span class="cart-total-display text-success">RM 0.00</span>
+                        </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small text-muted">Order Type *</label>
-                        <select class="form-select order-type-select rounded-3 shadow-none">
-                            <option value="delivery">Delivery</option>
-                            <option value="pickup">Self Pickup</option>
-                        </select>
-                    </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small text-muted">Your Name *</label>
+                            <input type="text" class="form-control customer-name-input rounded-3 shadow-none" placeholder="e.g. John Doe" required>
+                        </div>
 
-                    <div class="delivery-address-section mb-3">
-                        <label class="form-label fw-semibold small text-muted">Delivery Address *</label>
-                        <textarea class="form-control customer-address-input rounded-3 shadow-none" rows="2" placeholder="Street name, house number..."></textarea>
-                        
-                        <div class="mt-2">
-                            <button type="button" class="btn btn-outline-dark btn-sm w-100 rounded-pill get-location-btn fw-semibold">
-                                <i class="fa-solid fa-map-pin me-1 text-danger"></i> Use Google Maps Pin Location
-                            </button>
-                            <input type="hidden" class="maps-pin-url-input" value="">
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold small text-muted">Phone Number *</label>
+                            <input type="tel" class="form-control customer-phone-input rounded-3 shadow-none" placeholder="e.g. +60123456789" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">Order Type *</label>
+                            <select class="form-select order-type-select rounded-3 shadow-none">
+                                <option value="delivery">Delivery</option>
+                                <option value="pickup">Self Pickup</option>
+                            </select>
+                        </div>
+
+                        <div class="delivery-address-section mb-2">
+                            <label class="form-label fw-semibold small text-muted">Delivery Address *</label>
+                            <textarea class="form-control customer-address-input rounded-3 shadow-none" rows="2" placeholder="Street name, house number..."></textarea>
+
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-outline-dark btn-sm w-100 rounded-pill get-location-btn fw-semibold">
+                                    <i class="fa-solid fa-map-pin me-1 text-danger"></i> Use Google Maps Pin Location
+                                </button>
+                                <input type="hidden" class="maps-pin-url-input" value="">
+                            </div>
                         </div>
                     </div>
 
-                    <?php if ($vendor['status'] === 'open'): ?>
-                        <button type="button" class="btn btn-success w-100 fw-bold py-3 rounded-pill shadow-sm whatsapp-order-btn" style="background-color: #1e392a; border-color: #1e392a;" disabled>
+                    <?php if ($is_open): ?>
+                        <button type="button" class="btn btn-success w-100 fw-bold py-3 rounded-pill shadow-sm whatsapp-order-btn" style="background-color: #0e3b24; border-color: #0e3b24;" disabled>
                             <i class="fa-brands fa-whatsapp me-2 fs-5"></i> Submit Order via WhatsApp
                         </button>
                     <?php else: ?>
@@ -204,136 +629,122 @@ if (!empty($vendor_token)) {
                 </div>
             </div>
         </div>
-
-        <!-- Mobile Floating Cart Bar (Matches bottom pill bar in reference) -->
-        <?php if ($vendor['status'] === 'open'): ?>
-            <div class="d-lg-none fixed-bottom p-3 bg-transparent text-center" style="z-index: 1040; pointer-events: none;">
-                <button type="button" class="btn floating-order-bar py-3 px-4 shadow-lg fw-bold d-inline-flex justify-content-between align-items-center w-100" data-bs-toggle="modal" data-bs-target="#mobileCartModal" style="pointer-events: auto; max-width: 500px;">
-                    <div class="d-flex align-items-center">
-                        <div class="bg-white text-dark rounded-circle d-flex align-items-center justify-content-center me-2 fw-bold small" style="width: 28px; height: 28px;">
-                            <span id="mobile-cart-count">0</span>
-                        </div>
-                        <span>View your order</span>
-                    </div>
-                    <div>
-                        <span id="mobile-cart-total" class="fw-bold me-2">RM0.00</span>
-                        <i class="fa-solid fa-chevron-right small"></i>
-                    </div>
-                </button>
-            </div>
-        <?php endif; ?>
-
-        <!-- MOBILE CART MODAL -->
-        <div class="modal fade" id="mobileCartModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                    <div class="modal-header bg-dark text-white py-3 px-4" style="background-color: #1e392a !important;">
-                        <h5 class="modal-title fw-bold">
-                            <i class="fa-solid fa-receipt me-2 text-warning"></i>Your Order Summary
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body bg-light p-4">
-                        <div class="cart-items-container mb-3 bg-white p-3 rounded-4 shadow-sm">
-                            <p class="text-muted text-center py-3">Your order is empty.</p>
-                        </div>
-                        
-                        <div class="bg-white p-4 rounded-4 shadow-sm mb-3">
-                            <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
-                                <span>Total:</span>
-                                <span class="cart-total-display text-success">RM0.00</span>
-                            </div>
-                            
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small text-muted">Your Name *</label>
-                                <input type="text" class="form-control customer-name-input rounded-3 shadow-none" placeholder="e.g. John Doe" required>
-                            </div>
-
-                            <div class="mb-2">
-                                <label class="form-label fw-semibold small text-muted">Phone Number *</label>
-                                <input type="tel" class="form-control customer-phone-input rounded-3 shadow-none" placeholder="e.g. +60123456789" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold small text-muted">Order Type *</label>
-                                <select class="form-select order-type-select rounded-3 shadow-none">
-                                    <option value="delivery">Delivery</option>
-                                    <option value="pickup">Self Pickup</option>
-                                </select>
-                            </div>
-
-                            <div class="delivery-address-section mb-3">
-                                <label class="form-label fw-semibold small text-muted">Delivery Address *</label>
-                                <textarea class="form-control customer-address-input rounded-3 shadow-none" rows="2" placeholder="Street name, house number..."></textarea>
-                                
-                                <div class="mt-2">
-                                    <button type="button" class="btn btn-outline-dark btn-sm w-100 rounded-pill get-location-btn fw-semibold">
-                                        <i class="fa-solid fa-map-pin me-1 text-danger"></i> Use Google Maps Pin Location
-                                    </button>
-                                    <input type="hidden" class="maps-pin-url-input" value="">
-                                </div>
-                            </div>
-                        </div>
-
-                        <?php if ($vendor['status'] === 'open'): ?>
-                            <button type="button" class="btn btn-success w-100 fw-bold py-3 rounded-pill shadow-sm whatsapp-order-btn" style="background-color: #1e392a; border-color: #1e392a;" disabled>
-                                <i class="fa-brands fa-whatsapp me-2 fs-5"></i> Submit Order via WhatsApp
-                            </button>
-                        <?php else: ?>
-                            <button type="button" class="btn btn-secondary w-100 fw-bold py-3 rounded-pill" disabled>Vendor is Closed</button>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
-    const vendorName = "<?= addslashes($vendor['store_name']) ?>";
-    const vendorWhatsApp = "<?= preg_replace('/[^0-9]/', '', $vendor['whatsapp_number']) ?>";
+    const vendorName = <?= json_encode($store_name, JSON_UNESCAPED_UNICODE) ?>;
+    const vendorWhatsApp = <?= json_encode(preg_replace('/[^0-9]/', '', $vendor['whatsapp_number'] ?? '')) ?>;
+    const storeIsOpen = <?= $is_open ? 'true' : 'false' ?>;
 
+    const menuItemsData = <?= json_encode(array_map(function($item) {
+        return [
+            'id' => (int)$item['id'],
+            'name' => $item['name'],
+            'price' => (float)$item['price'],
+            'stock' => (int)$item['stock']
+        ];
+    }, $menu_items), JSON_UNESCAPED_UNICODE) ?>;
+
+    let activeCategory = 'Semua';
     let cart = [];
 
-    document.querySelectorAll('.add-to-cart').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const name = this.getAttribute('data-name');
-            const price = parseFloat(this.getAttribute('data-price'));
-            const maxStock = parseInt(this.getAttribute('data-stock'));
+    function selectStoreCategory(btn) {
+        document.querySelectorAll('#storeCategoryPills .cat-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeCategory = btn.getAttribute('data-category') || 'Semua';
+        applyStoreFilters();
+    }
 
-            const existing = cart.find(item => item.id === id);
-            const currentQty = existing ? existing.quantity : 0;
-
-            if (currentQty + 1 > maxStock) {
-                alert(`Sorry, only ${maxStock} units of "${name}" are available in stock.`);
-                return;
-            }
-
-            if (existing) {
-                existing.quantity += 1;
-            } else {
-                cart.push({ id, name, price, quantity: 1, maxStock, remark: '' });
-            }
-            updateCartUI();
+    function applyStoreFilters() {
+        const query = (document.getElementById('storeSearchInput')?.value || '').trim().toLowerCase();
+        document.querySelectorAll('#storeProductGrid .store-item-card').forEach(card => {
+            const cat = card.getAttribute('data-category') || '';
+            const searchHaystack = card.getAttribute('data-search') || '';
+            const matchesCat = (activeCategory === 'Semua') || (cat.toLowerCase() === activeCategory.toLowerCase());
+            const matchesQuery = (query === '') || searchHaystack.includes(query);
+            card.style.display = (matchesCat && matchesQuery) ? 'flex' : 'none';
         });
-    });
+    }
+
+    function changeItemQty(itemId, delta) {
+        if (!storeIsOpen) return;
+        const prod = menuItemsData.find(p => p.id === itemId);
+        if (!prod) return;
+
+        const idx = cart.findIndex(c => c.id === itemId);
+        const currentQty = idx >= 0 ? cart[idx].quantity : 0;
+        const nextQty = currentQty + delta;
+
+        if (nextQty > prod.stock) {
+            alert(`Sorry, only ${prod.stock} units of "${prod.name}" are available in stock.`);
+            return;
+        }
+
+        if (nextQty <= 0) {
+            if (idx >= 0) cart.splice(idx, 1);
+        } else if (idx >= 0) {
+            cart[idx].quantity = nextQty;
+        } else {
+            cart.push({
+                id: prod.id,
+                name: prod.name,
+                price: prod.price,
+                quantity: nextQty,
+                maxStock: prod.stock,
+                remark: ''
+            });
+        }
+
+        renderItemActionControl(itemId);
+        updateCartUI();
+    }
+
+    function renderItemActionControl(itemId) {
+        const container = document.getElementById('item-action-' + itemId);
+        if (!container) return;
+
+        const found = cart.find(c => c.id === itemId);
+        const qty = found ? found.quantity : 0;
+
+        if (qty > 0) {
+            container.innerHTML = `
+                <div class="qty-pill-stepper">
+                    <button type="button" class="qty-pill-btn" onclick="changeItemQty(${itemId}, -1)" aria-label="Kurang">
+                        <i class="fa-solid fa-minus"></i>
+                    </button>
+                    <span class="qty-pill-val">${qty}</span>
+                    <button type="button" class="qty-pill-btn" onclick="changeItemQty(${itemId}, 1)" aria-label="Tambah">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <button type="button" class="btn-tambah-pill" ${storeIsOpen ? '' : 'disabled'} onclick="changeItemQty(${itemId}, 1)">
+                    <i class="fa-solid fa-plus" style="font-size: 0.72rem;"></i> Tambah
+                </button>
+            `;
+        }
+    }
 
     function updateCartUI() {
-        const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-        const mobileCountEl = document.getElementById('mobile-cart-count');
-        const mobileTotalEl = document.getElementById('mobile-cart-total');
-        
-        if (mobileCountEl) mobileCountEl.textContent = totalItemsCount;
+        const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const bar = document.getElementById('floatingOrderBar');
+        const countEl = document.getElementById('floatingItemCount');
+        const totalEl = document.getElementById('floatingTotalAmount');
+
+        if (countEl) countEl.textContent = totalQty;
 
         if (cart.length === 0) {
+            if (bar) bar.classList.remove('active');
+            if (totalEl) totalEl.textContent = 'RM 0.00';
+
             document.querySelectorAll('.cart-items-container').forEach(el => {
-                el.innerHTML = '<p class="text-muted text-center py-3">Your order is empty.</p>';
+                el.innerHTML = '<p class="text-muted text-center py-3 mb-0">Your order is empty.</p>';
             });
             document.querySelectorAll('.cart-total-display').forEach(el => {
-                el.textContent = '$0.00';
+                el.textContent = 'RM 0.00';
             });
-            if (mobileTotalEl) mobileTotalEl.textContent = '$0.00';
-            
             document.querySelectorAll('.whatsapp-order-btn').forEach(btn => btn.disabled = true);
             return;
         }
@@ -342,8 +753,8 @@ if (!empty($vendor_token)) {
         let total = 0;
 
         cart.forEach((item, index) => {
-            let itemTotal = item.price * item.quantity;
-            total += itemTotal;
+            const lineTotal = item.price * item.quantity;
+            total += lineTotal;
             const remarkVal = item.remark ? item.remark.replace(/"/g, '&quot;') : '';
 
             html += `
@@ -351,20 +762,20 @@ if (!empty($vendor_token)) {
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <div>
                             <h6 class="mb-0 fw-bold">${item.name}</h6>
-                            <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
+                            <small class="text-muted">RM ${item.price.toFixed(2)} x ${item.quantity}</small>
                         </div>
                         <div class="btn-group btn-group-sm">
-                            <button type="button" class="btn btn-outline-secondary" onclick="changeQty(${index}, -1)">-</button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="changeQty(${index}, 1)">+</button>
-                            <button type="button" class="btn btn-outline-danger" onclick="removeItem(${index})"><i class="fa-solid fa-trash"></i></button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="changeQtyByIndex(${index}, -1)">-</button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="changeQtyByIndex(${index}, 1)">+</button>
+                            <button type="button" class="btn btn-outline-danger" onclick="removeCartIndex(${index})"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
                     <div class="mt-1">
-                        <input type="text" 
-                            class="form-control form-control-sm bg-light" 
-                            placeholder="Add remarks (e.g. Less spicy)" 
+                        <input type="text"
+                            class="form-control form-control-sm bg-light rounded-3"
+                            placeholder="Add remarks (e.g. Size / colour / note)"
                             value="${remarkVal}"
-                            oninput="updateRemark(${index}, this.value)">
+                            oninput="updateItemRemark(${index}, this.value)">
                     </div>
                 </li>
             `;
@@ -372,51 +783,49 @@ if (!empty($vendor_token)) {
 
         html += '</ul>';
 
+        if (bar) bar.classList.add('active');
+        if (totalEl) totalEl.textContent = 'RM ' + total.toFixed(2);
+
         document.querySelectorAll('.cart-items-container').forEach(el => {
             el.innerHTML = html;
         });
         document.querySelectorAll('.cart-total-display').forEach(el => {
-            el.textContent = '$' + total.toFixed(2);
+            el.textContent = 'RM ' + total.toFixed(2);
         });
-        if (mobileTotalEl) mobileTotalEl.textContent = '$' + total.toFixed(2);
-
         document.querySelectorAll('.whatsapp-order-btn').forEach(btn => btn.disabled = false);
     }
 
-    function updateRemark(index, text) {
+    function updateItemRemark(index, text) {
         if (cart[index]) {
             cart[index].remark = text.trim();
         }
     }
 
-    function changeQty(index, delta) {
-        cart[index].quantity += delta;
-        if (cart[index].quantity <= 0) {
-            cart.splice(index, 1);
-        }
-        updateCartUI();
+    function changeQtyByIndex(index, delta) {
+        if (!cart[index]) return;
+        changeItemQty(cart[index].id, delta);
     }
 
-    function removeItem(index) {
+    function removeCartIndex(index) {
+        if (!cart[index]) return;
+        const id = cart[index].id;
         cart.splice(index, 1);
+        renderItemActionControl(id);
         updateCartUI();
     }
 
-    // Handle Order Type Toggle for both Desktop and Mobile views
     document.querySelectorAll('.order-type-select').forEach(selectElem => {
         selectElem.addEventListener('change', function() {
-            const orderTypeVal = this.value;
+            const val = this.value;
             document.querySelectorAll('.delivery-address-section').forEach(section => {
-                section.style.display = (orderTypeVal === 'pickup') ? 'none' : 'block';
+                section.style.display = (val === 'pickup') ? 'none' : 'block';
             });
         });
     });
 
-    // Geolocation button handlers
     document.querySelectorAll('.get-location-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const button = this;
-            
             if (!navigator.geolocation) {
                 alert('Geolocation is not supported by your browser');
                 return;
@@ -430,18 +839,18 @@ if (!empty($vendor_token)) {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     const mapsUrl = `https://www.maps.google.com/?q=${lat},${lng}`;
-                    
+
                     document.querySelectorAll('.customer-address-input').forEach(textarea => {
                         textarea.value = `Google Maps Pin Location:\n${mapsUrl}`;
                     });
                     document.querySelectorAll('.maps-pin-url-input').forEach(input => {
                         input.value = mapsUrl;
                     });
-                    
+
                     button.disabled = false;
                     button.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> Location Pinned Successfully!';
                 },
-                function(error) {
+                function() {
                     alert('Unable to retrieve your location. Please enter your address manually.');
                     button.disabled = false;
                     button.innerHTML = '<i class="fa-solid fa-map-pin me-1 text-success"></i> Use Google Maps Pin Location';
@@ -451,12 +860,10 @@ if (!empty($vendor_token)) {
         });
     });
 
-    // WhatsApp Order Submit Handlers
     document.querySelectorAll('.whatsapp-order-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             if (cart.length === 0) return;
 
-            // Grab values from whichever form context is currently active (Desktop sidebar or Mobile modal)
             const activeContainer = this.closest('.card-body') || this.closest('.modal-body');
             const customerName = activeContainer.querySelector('.customer-name-input').value.trim();
             const customerPhone = activeContainer.querySelector('.customer-phone-input').value.trim();
@@ -475,10 +882,9 @@ if (!empty($vendor_token)) {
                 return;
             }
 
-            // Close mobile modal if open
-            const mobileModalEl = document.getElementById('mobileCartModal');
-            if (mobileModalEl) {
-                const modalInstance = bootstrap.Modal.getInstance(mobileModalEl);
+            const modalEl = document.getElementById('checkoutModal');
+            if (modalEl) {
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
             }
 
@@ -486,7 +892,7 @@ if (!empty($vendor_token)) {
             message += `*Customer Name:* ${customerName}\n`;
             message += `*Phone Number:* ${customerPhone}\n`;
             message += `*Order Type:* ${orderType.toUpperCase()}\n`;
-            
+
             if (orderType === 'delivery') {
                 message += `*Delivery Address:* ${customerAddress}\n`;
             }
@@ -494,31 +900,31 @@ if (!empty($vendor_token)) {
 
             let total = 0;
             let receiptItemsHtml = '';
-            
+
             cart.forEach(item => {
-                let subtotal = item.price * item.quantity;
+                const subtotal = item.price * item.quantity;
                 total += subtotal;
 
-                let itemLine = `• ${item.name} x ${item.quantity} - $${subtotal.toFixed(2)}`;
+                let itemLine = `• ${item.name} x ${item.quantity} - RM ${subtotal.toFixed(2)}`;
                 if (item.remark) {
                     itemLine += `\n  _(Note: ${item.remark})_`;
                 }
                 message += `${itemLine}\n`;
-                
+
                 receiptItemsHtml += `
                     <li class="list-group-item d-flex justify-content-between align-items-start px-0">
                         <div>
                             <h6 class="mb-0 fw-bold">${item.name}</h6>
-                            <small class="text-muted">$${item.price.toFixed(2)} x ${item.quantity}</small>
+                            <small class="text-muted">RM ${item.price.toFixed(2)} x ${item.quantity}</small>
                             ${item.remark ? `<br><small class="text-danger"><em>Note: ${item.remark}</em></small>` : ''}
                         </div>
-                        <span class="fw-bold">$${subtotal.toFixed(2)}</span>
+                        <span class="fw-bold">RM ${subtotal.toFixed(2)}</span>
                     </li>
                 `;
             });
 
             message += `--------------------------------\n`;
-            message += `*Total Amount:* $${total.toFixed(2)}\n\n`;
+            message += `*Total Amount:* RM ${total.toFixed(2)}\n\n`;
             message += `Please confirm my order. Thank you!`;
 
             const formData = new FormData();
@@ -536,37 +942,37 @@ if (!empty($vendor_token)) {
             const whatsappURL = `https://wa.me/${vendorWhatsApp}?text=${encodedMessage}`;
             window.open(whatsappURL, '_blank');
 
-            const mainContainer = document.querySelector('main.container');
-            mainContainer.innerHTML = `
-                <div class="row justify-content-center">
+            const rootEl = document.getElementById('storefrontRoot');
+            rootEl.innerHTML = `
+                <div class="row justify-content-center py-4">
                     <div class="col-md-7">
-                        <div class="card shadow-sm border-success">
-                            <div class="card-header bg-success text-white text-center py-3">
-                                <i class="fa-solid fa-circle-check fs-1 mb-2"></i>
+                        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                            <div class="card-header text-white text-center py-4" style="background-color: #0e3b24;">
+                                <i class="fa-solid fa-circle-check fs-1 mb-2" style="color: #b2ff81;"></i>
                                 <h3 class="fw-bold mb-0">Order Sent Successfully!</h3>
-                                <p class="mb-0 small">Your order has5 been submitted to <strong>${vendorName}</strong> via WhatsApp.</p>
+                                <p class="mb-0 small opacity-75">Your order has been submitted to <strong>${vendorName}</strong> via WhatsApp.</p>
                             </div>
-                            <div class="card-body p-4">
-                                <h5 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-receipt me-2"></i>Order Receipt</h5>
-                                <p class="mb-1 text-muted"><strong>Customer Name:</strong> ${customerName}</p>
-                                <p class="mb-1 text-muted"><strong>Phone:</strong> ${customerPhone}</p>
-                                <p class="mb-1 text-muted"><strong>Order Type:</strong> ${orderType.toUpperCase()}</p>
-                                ${orderType === 'delivery' ? `<p class="mb-1 text-muted"><strong>Address:</strong> ${customerAddress}</p>` : ''}
-                                <p class="mb-3 text-muted"><strong>Vendor:</strong> ${vendorName}</p>
+                            <div class="card-body p-4 bg-white">
+                                <h5 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-receipt me-2 text-success"></i>Order Receipt</h5>
+                                <p class="mb-1 text-muted small"><strong>Customer Name:</strong> ${customerName}</p>
+                                <p class="mb-1 text-muted small"><strong>Phone:</strong> ${customerPhone}</p>
+                                <p class="mb-1 text-muted small"><strong>Order Type:</strong> ${orderType.toUpperCase()}</p>
+                                ${orderType === 'delivery' ? `<p class="mb-1 text-muted small"><strong>Address:</strong> ${customerAddress}</p>` : ''}
+                                <p class="mb-3 text-muted small"><strong>Vendor:</strong> ${vendorName}</p>
                                 <hr>
                                 <ul class="list-group list-group-flush mb-3">
                                     ${receiptItemsHtml}
                                 </ul>
                                 <hr>
-                                <div class="d-flex justify-content-between mb-4 fw-bold fs-4">
-                                    <span>Total Paid:</span>
-                                    <span class="text-success">$${total.toFixed(2)}</span>
+                                <div class="d-flex justify-content-between mb-4 fw-bold fs-5">
+                                    <span>Total:</span>
+                                    <span class="text-success">RM ${total.toFixed(2)}</span>
                                 </div>
                                 <div class="d-grid gap-2">
-                                    <a href="index.php?token=<?= $vendor_token ?>" class="btn btn-dark fw-bold">
+                                    <a href="index.php?token=<?= urlencode($vendor_token) ?>" class="btn btn-dark fw-bold rounded-pill py-2" style="background-color: #0e3b24;">
                                         <i class="fa-solid fa-arrow-left me-2"></i> Back to Store Menu
                                     </a>
-                                    <a href="index.php" class="btn btn-outline-secondary">
+                                    <a href="index.php" class="btn btn-outline-secondary rounded-pill py-2">
                                         Browse Other Vendors
                                     </a>
                                 </div>
@@ -579,7 +985,7 @@ if (!empty($vendor_token)) {
     });
     </script>
 
-<?php 
+<?php
 } else {
     // ----------------------------------------------------
     // LANDING PAGE VIEW (Rows 1 to 8 + remaining placeholders)
