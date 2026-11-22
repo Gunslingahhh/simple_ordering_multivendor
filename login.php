@@ -1,128 +1,157 @@
 <?php
-require_once 'config/db.php';
+if (file_exists(__DIR__ . '/config/db.php')) {
+    require_once __DIR__ . '/config/db.php';
+}
 session_start();
 
 $error = '';
+$usernameValue = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username']);
-    $password = $_POST['password'];
+    $usernameValue = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    if (!empty($username) && !empty($password)) {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch();
+    if ($usernameValue !== '' && $password !== '') {
+        if (isset($pdo) && $pdo instanceof PDO) {
+            $stmt = $pdo->prepare("
+                SELECT u.id, u.username, u.password, u.role,
+                       v.id AS vendor_id, v.token AS vendor_token, v.store_name, v.logo
+                FROM users u
+                LEFT JOIN vendors v ON v.user_id = u.id
+                WHERE u.username = :username
+                LIMIT 1
+            ");
+            $stmt->execute([':username' => $usernameValue]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['role'] = $user['role'];
+            if ($user && password_verify($password, $user['password'])) {
+                $_SESSION['user_id'] = (int) $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['role'] = $user['role'];
 
-            if ($user['role'] === 'admin') {
-                header('Location: admin/dashboard.php');
-                exit;
-            } elseif ($user['role'] === 'vendor') {
-                header('Location: vendor/dashboard.php');
-                exit;
+                if (!empty($user['vendor_id'])) {
+                    $_SESSION['vendor_id'] = (int) $user['vendor_id'];
+                    $_SESSION['vendor_token'] = $user['vendor_token'];
+                    $_SESSION['vendor_store_name'] = $user['store_name'];
+                    $_SESSION['vendor_logo'] = $user['logo'];
+                }
+
+                if ($user['role'] === 'admin') {
+                    header('Location: admin/dashboard.php');
+                    exit;
+                } elseif ($user['role'] === 'vendor') {
+                    header('Location: vendor/dashboard.php');
+                    exit;
+                } else {
+                    header('Location: index.php');
+                    exit;
+                }
+            } else {
+                $error = 'ID/slug kedai atau kata laluan tidak sah.';
             }
         } else {
-            $error = 'Invalid username or password.';
+            $error = 'Sambungan pangkalan data belum dikonfigurasi.';
         }
     } else {
-        $error = 'Please fill in all fields.';
+        $error = 'Sila lengkapkan semua medan.';
     }
 }
 ?>
-<?php require_once 'includes/header.php'; ?>
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Masuk Peniaga — Kedai WA Kamek</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body class="d-flex flex-column min-vh-100" style="background-color: #f3f4ee; color: #13261d;">
 
-<style>
-    body {
-        background-color: #f3f4ee;
-    }
-    .login-wrapper {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 2rem 1rem;
-    }
-    .login-card {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 1.5rem;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-        width: 100%;
-        max-width: 460px;
-        padding: 2.5rem;
-    }
-    .form-control-rounded {
-        border-radius: 50rem;
-        padding: 0.75rem 1.25rem;
-        border: 1px solid #cbd5e1;
-        font-size: 0.95rem;
-    }
-    .form-control-rounded:focus {
-        border-color: #0b291a;
-        box-shadow: 0 0 0 0.2rem rgba(11, 41, 26, 0.15);
-    }
-    .btn-login-green {
-        background-color: #0b291a;
-        color: #ffffff;
-        border-radius: 50rem;
-        padding: 0.75rem;
-        font-weight: 700;
-        border: none;
-        width: 100%;
-        transition: background-color 0.2s ease;
-    }
-    .btn-login-green:hover {
-        background-color: #16422b;
-        color: #ffffff;
-    }
-</style>
+    <main class="container-fluid flex-grow-1 d-flex align-items-center justify-content-center py-4 py-md-5 px-3 px-sm-4">
+        <div class="w-100" style="max-width: 460px;">
 
-<div class="login-wrapper">
-    <div style="width: 100%; max-width: 460px;" class="mb-3">
-        <a href="index.php" class="text-decoration-none text-muted small fw-semibold">
-            <i class="fa-solid fa-arrow-left me-1"></i> Kembali ke laman utama
-        </a>
-    </div>
-
-    <div class="login-card">
-        <!-- Logo -->
-        <div class="mb-4">
-            <div class="d-flex align-items-center gap-2">
-                <div class="bg-success text-white rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: #0b291a !important;">
-                    <i class="fa-solid fa-bag-shopping fs-5"></i>
-                </div>
-                <span class="fw-bold fs-5" style="color: #0b291a;">Kedai <span style="color: #198754;">WA Kamek</span></span>
-            </div>
-        </div>
-
-        <h3 class="fw-bold text-dark mb-1" style="font-size: 1.6rem; letter-spacing: -0.5px;">
-            Log masuk peniaga
-        </h3>
-        <p class="text-muted small mb-4">
-            Urus kedai digital dan produk anda.
-        </p>
-        
-        <?php if ($error): ?>
-            <div class="alert alert-danger py-2 small"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
-
-        <form method="POST" action="">
             <div class="mb-3">
-                <label for="username" class="form-label small fw-bold text-dark">ID atau slug kedai</label>
-                <input type="text" class="form-control form-control-rounded" id="username" name="username" placeholder="cth: dapur-mak-long" required>
+                <a href="index.php"
+                   class="d-inline-flex align-items-center gap-2 text-decoration-none small fw-semibold py-1"
+                   style="color: #6b7c73;">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Kembali ke laman utama</span>
+                </a>
             </div>
-            <div class="mb-4">
-                <label for="password" class="form-label small fw-bold text-dark">PIN / Kata Laluan</label>
-                <input type="password" class="form-control form-control-rounded" id="password" name="password" required>
-            </div>
-            <button type="submit" class="btn btn-login-green shadow-sm">Log masuk</button>
-        </form>
-    </div>
-</div>
 
-<?php require_once 'includes/footer.php'; ?>
+            <div class="card border rounded-4 shadow-sm bg-white p-3 p-sm-4 p-md-5" style="border-color: #e2e8f0 !important;">
+                <div class="card-body p-0">
+
+                    <div class="mb-4">
+                        <img
+                            src="https://placehold.co/175x48/ffffff/0b291a?text=Kedai+WA+Kamek&font=montserrat"
+                            alt="Kedai WA Kamek Logo Placeholder"
+                            class="img-fluid object-fit-contain"
+                            style="height: 46px;"
+                        >
+                    </div>
+
+                    <h1 class="h3 fw-bold mb-1" style="color: #0e1f17; letter-spacing: -0.02em;">
+                        Log masuk peniaga
+                    </h1>
+                    <p class="small mb-4" style="color: #6b7c73;">
+                        Urus kedai digital dan produk anda.
+                    </p>
+
+                    <?php if ($error !== ''): ?>
+                        <div class="alert alert-danger rounded-3 py-2 px-3 small mb-4" role="alert">
+                            <?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="POST" action="login.php">
+                        <div class="mb-3">
+                            <label for="username" class="form-label small fw-bold mb-2" style="color: #13261d;">
+                                Nama pengguna / ID kedai
+                            </label>
+                            <input
+                                type="text"
+                                class="form-control rounded-pill py-3 px-4"
+                                id="username"
+                                name="username"
+                                placeholder="cth: vendor1"
+                                value="<?php echo htmlspecialchars($usernameValue, ENT_QUOTES, 'UTF-8'); ?>"
+                                autocomplete="username"
+                                required
+                                style="border-color: #cbd5e1; font-size: 0.95rem;"
+                            >
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label small fw-bold mb-2" style="color: #13261d;">
+                                PIN / Kata Laluan
+                            </label>
+                            <input
+                                type="password"
+                                class="form-control rounded-pill py-3 px-4"
+                                id="password"
+                                name="password"
+                                autocomplete="current-password"
+                                required
+                                style="border-color: #cbd5e1; font-size: 0.95rem;"
+                            >
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="btn w-100 rounded-pill py-3 fw-bold shadow-sm border-0"
+                            style="background-color: #0b291a; color: #ffffff; font-size: 0.95rem;">
+                            Log masuk
+                        </button>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

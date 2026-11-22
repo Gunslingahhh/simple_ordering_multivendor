@@ -1,84 +1,133 @@
-</main> <!-- Closes main container opened in header.php -->
+<!-- Bootstrap Full-Width Footer -->
+    <footer class="container-fluid mt-auto pt-5 pb-4 text-white" style="background-color: #0b2618;">
+        <div class="container pt-2">
 
-    <!-- FOOTER SECTION MATCHING REFERENCE DESIGN -->
-    <footer class="text-white pt-5 pb-4 mt-auto" style="background-color: #0b291a;">
-        <div class="container py-4">
-            <div class="row g-4 justify-content-between">
-                
-                <!-- Column 1: Logo & Tagline -->
-                <div class="col-lg-4 mb-3 mb-lg-0">
-                    <div class="bg-white p-3 rounded-4 d-inline-block shadow-sm mb-3">
-                        <img src="/simple_ordering_multivendor/assets/logo.png" alt="Kedai WA Kamek Logo" height="40" class="d-block">
+            <!-- Main 3-Column Footer Row -->
+            <div class="row g-4 g-lg-5 pb-5">
+
+                <!-- Column 1: Logo Placeholder Card, Description & Tagline -->
+                <div class="col-12 col-lg-5">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-3 p-2 mb-4 shadow-sm"
+                         style="width: 112px; height: 76px;">
+                        <img
+                            src="https://placehold.co/160x100/ffffff/143326?text=Kedai+WA+Kamek"
+                            alt="Kedai WA Kamek Logo Placeholder"
+                            class="img-fluid h-100 w-100 object-fit-contain"
+                        >
                     </div>
-                    <p class="text-white-50 small mb-2" style="max-width: 320px; line-height: 1.6;">
+
+                    <p class="small mb-3" style="color: rgba(255, 255, 255, 0.72); max-width: 340px; line-height: 1.65;">
                         Your own digital store. Orders straight to WhatsApp. Built for Malaysian small businesses, from Sarawak.
                     </p>
-                    <p class="fw-bold fst-italic mb-0" style="color: #b2ff81; font-size: 1.15rem; font-family: cursive;">
+
+                    <p class="fst-italic fw-semibold small mb-0" style="color: #9df557;">
                         Bisnes Makin Mudah
                     </p>
                 </div>
 
                 <!-- Column 2: Explore Links -->
-                <div class="col-6 col-lg-3">
-                    <h6 class="fw-bold text-uppercase tracking-wider mb-3" style="color: #b2ff81; font-size: 0.85rem; letter-spacing: 1px;">Explore</h6>
-                    <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                        <li><a href="/simple_ordering_multivendor/index.php" class="text-white-50 text-decoration-none small hover-text-white">Home</a></li>
-                        <li><a href="/simple_ordering_multivendor/index.php#how-it-works" class="text-white-50 text-decoration-none small hover-text-white">Explore Kedai</a></li>
-                        <li><a href="/simple_ordering_multivendor/index.php#how-it-works" class="text-white-50 text-decoration-none small hover-text-white">How It Works</a></li>
-                        <li><a href="/simple_ordering_multivendor/index.php#categories" class="text-white-50 text-decoration-none small hover-text-white">Categories</a></li>
-                        <li><a href="/simple_ordering_multivendor/index.php#features" class="text-white-50 text-decoration-none small hover-text-white">Features</a></li>
-                        <li><a href="/simple_ordering_multivendor/index.php#faq" class="text-white-50 text-decoration-none small hover-text-white">FAQ</a></li>
-                        <li><a href="/simple_ordering_multivendor/index.php#contact" class="text-white-50 text-decoration-none small hover-text-white">Contact</a></li>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <h3 class="h6 fw-bold text-uppercase mb-3" style="color: #84f56b; letter-spacing: 0.12em; font-size: 0.75rem;">
+                        EXPLORE
+                    </h3>
+                    <ul class="list-unstyled d-flex flex-column gap-2 small mb-0">
+                        <li>
+                            <a href="index.php" class="text-decoration-none" style="color: rgba(255, 255, 255, 0.72);">
+                                Home
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#section-8" class="text-decoration-none" style="color: rgba(255, 255, 255, 0.72);">
+                                Explore Kedai
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#section-4" class="text-decoration-none" style="color: rgba(255, 255, 255, 0.72);">
+                                How It Works
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#section-2" class="text-decoration-none" style="color: rgba(255, 255, 255, 0.72);">
+                                Categories
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#section-6" class="text-decoration-none" style="color: rgba(255, 255, 255, 0.72);">
+                                Features
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#section-11" class="text-decoration-none" style="color: rgba(255, 255, 255, 0.72);">
+                                FAQ
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#section-10" class="text-decoration-none" style="color: rgba(255, 255, 255, 0.72);">
+                                Contact
+                            </a>
+                        </li>
                     </ul>
                 </div>
 
-                <!-- Column 3: Contact & Portal Logins -->
-                <div class="col-6 col-lg-4">
-                    <h6 class="fw-bold text-uppercase tracking-wider mb-3" style="color: #b2ff81; font-size: 0.85rem; letter-spacing: 1px;">Contact</h6>
-                    <ul class="list-unstyled d-flex flex-column gap-2 mb-4">
-                        <li>
-                            <a href="https://wa.me/601169893389" target="_blank" class="text-white-50 text-decoration-none small d-flex align-items-center">
-                                <i class="fa-brands fa-whatsapp text-success me-2 fs-6"></i> +6011-69893389
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://wa.me/60103055330" target="_blank" class="text-white-50 text-decoration-none small d-flex align-items-center">
-                                <i class="fa-brands fa-whatsapp text-success me-2 fs-6"></i> +6010-3055330
-                            </a>
-                        </li>
-                        <li class="text-white-50 small d-flex align-items-center">
-                            <i class="fa-regular fa-envelope text-success me-2 fs-6"></i> WhatsApp is the fastest way to reach us
-                        </li>
-                    </ul>
+                <!-- Column 3: Contact & Portal Links -->
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <h3 class="h6 fw-bold text-uppercase mb-3" style="color: #84f56b; letter-spacing: 0.12em; font-size: 0.75rem;">
+                        CONTACT
+                    </h3>
 
-                    <div class="d-flex align-items-center gap-3 pt-2 border-top border-secondary border-opacity-25">
-                        <a href="/simple_ordering_multivendor/login.php" class="text-white-50 text-decoration-none small hover-text-white">Vendor login</a>
-                        <span class="text-secondary">•</span>
-                        <a href="/simple_ordering_multivendor/login.php" class="text-white-50 text-decoration-none small hover-text-white">Admin login</a>
+                    <div class="d-flex flex-column gap-3 small mb-4">
+                        <a href="https://wa.me/601169893389"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="text-decoration-none d-inline-flex align-items-center gap-2"
+                           style="color: rgba(255, 255, 255, 0.78);">
+                            <i class="bi bi-whatsapp fs-6" style="color: #4ade80;"></i>
+                            <span>+6011-69893389</span>
+                        </a>
+
+                        <a href="https://wa.me/60103055330"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="text-decoration-none d-inline-flex align-items-center gap-2"
+                           style="color: rgba(255, 255, 255, 0.78);">
+                            <i class="bi bi-whatsapp fs-6" style="color: #4ade80;"></i>
+                            <span>+6010-3055330</span>
+                        </a>
+
+                        <a href="#section-10"
+                           class="text-decoration-none d-inline-flex align-items-center gap-2"
+                           style="color: rgba(255, 255, 255, 0.78);">
+                            <i class="bi bi-envelope fs-6" style="color: #34d399;"></i>
+                            <span>WhatsApp is the fastest way to reach us</span>
+                        </a>
+                    </div>
+
+                    <hr class="border-secondary border-opacity-50 my-3">
+
+                    <div class="d-flex flex-wrap align-items-center gap-2 small">
+                        <a href="/simple_ordering_multivendor/login.php" class="text-decoration-none" style="color: rgba(255, 255, 255, 0.65);">
+                            Vendor login
+                        </a>
+                        <span style="color: rgba(255, 255, 255, 0.4);">•</span>
+                        <a href="/simple_ordering_multivendor/login.php" class="text-decoration-none" style="color: rgba(255, 255, 255, 0.65);">
+                            Admin login
+                        </a>
                     </div>
                 </div>
 
             </div>
 
-            <hr class="border-secondary border-opacity-25 my-4">
-
-            <!-- Copyright Bar -->
-            <div class="row align-items-center">
-                <div class="col text-center">
-                    <p class="text-white-50 small mb-0" style="font-size: 0.8rem;">
-                        &copy; <?= date('Y') ?> Kedai WA Kamek. Kedai WA Kamek does not process customer payments.
-                    </p>
-                </div>
+            <!-- Bottom Copyright & Payment Disclaimer Bar -->
+            <div class="border-top border-secondary border-opacity-25 pt-4 text-center">
+                <p class="small mb-0" style="color: rgba(255, 255, 255, 0.58);">
+                    &copy; <?php echo date("Y"); ?> Kedai WA Kamek. Kedai WA Kamek does not process customer payments.
+                </p>
             </div>
+
         </div>
     </footer>
 
-    <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <style>
-        .hover-text-white:hover {
-            color: #ffffff !important;
-        }
-    </style>
+    <!-- Bootstrap 5 JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>

@@ -6,3038 +6,1199 @@ require_once 'includes/header.php';
 $vendor_token = isset($_GET['token']) ? trim($_GET['token']) : '';
 
 if (!empty($vendor_token)) {
-    // ----------------------------------------------------
-    // VENDOR STORE & MENU VIEW (When ?token=XYZ is present)
-    // ----------------------------------------------------
-    $stmt = $pdo->prepare("SELECT * FROM vendors WHERE token = ? AND is_active = 1");
-    $stmt->execute([$vendor_token]);
-    $vendor = $stmt->fetch();
-
-    if (!$vendor) {
-        echo '<div class="alert alert-danger mt-5 text-center shadow-sm py-4 rounded-4 border-0">
-                <h4 class="fw-bold">Store not found or link is invalid.</h4>
-                <p class="text-muted mb-3">Please check the store link and try again.</p>
-                <a href="index.php" class="btn btn-dark rounded-pill fw-bold px-4">Back to Home</a>
-              </div>';
-        require_once 'includes/footer.php';
-        exit;
-    }
-
-    $vendor_id = (int)$vendor['id'];
-
-    // Fetch menu items for this vendor (available and in stock)
-    $stmtMenu = $pdo->prepare("SELECT * FROM menu_items WHERE vendor_id = ? AND is_available = 1 AND stock > 0 ORDER BY id ASC");
-    $stmtMenu->execute([$vendor_id]);
-    $menu_items = $stmtMenu->fetchAll();
-
-    // Build dynamic category pills starting with "Semua"
-    $categories = ['Semua'];
-    foreach ($menu_items as $m) {
-        $cat = trim($m['category'] ?? '');
-        if ($cat !== '' && !in_array($cat, $categories, true)) {
-            $categories[] = $cat;
-        }
-    }
-
-    $is_open = strtolower($vendor['status'] ?? 'open') === 'open';
-    $store_name = $vendor['store_name'] ?? 'Kedai Peniaga';
-    $tagline = !empty($vendor['tagline']) ? $vendor['tagline'] : ($vendor['description'] ?? '');
-    $hours = !empty($vendor['operating_hours']) ? $vendor['operating_hours'] : '10:00 am – 8:00 pm';
-    $city = !empty($vendor['city']) ? $vendor['city'] : (!empty($vendor['address']) ? $vendor['address'] : 'Kuching');
-    $maps_url = !empty($vendor['maps_link'])
-        ? $vendor['maps_link']
-        : 'https://maps.google.com/?q=' . urlencode($city . ', Sarawak');
-
-    $banner_img = !empty($vendor['banner'])
-        ? 'uploads/vendors/' . htmlspecialchars($vendor['banner'])
-        : (!empty($vendor['logo']) ? 'uploads/vendors/' . htmlspecialchars($vendor['logo']) : 'uploads/vendors/default_logo.png');
-
-    $title_size = '1.85rem';
-    if (($vendor['title_size'] ?? '') === 'Kecil') {
-        $title_size = '1.45rem';
-    } elseif (($vendor['title_size'] ?? '') === 'Besar') {
-        $title_size = '2.25rem';
-    }
+} else{
     ?>
+    <main class="flex-grow-1">
+        <!-- Section 01: Hero -->
+        <section id="section-1" class="container-fluid text-white py-5" style="background: #083b36;">
+            <div class="container py-4 py-lg-5">
+                <div class="row align-items-center g-5">
 
-    <style>
-        :root {
-            --forest-dark: #0e3b24;
-            --forest-hover: #092818;
-            --surface-bg: #f6f7f5;
-            --card-border: #e5e8e6;
-            --text-main: #18221d;
-            --text-muted-ui: #6c7570;
-            --open-green: #169c57;
-            --stepper-bg: #e7f2ec;
-        }
+                    <!-- Left Column: Eyebrow, Headlines, Copy & Pill CTAs -->
+                    <div class="col-12 col-lg-7">
+                        <p class="fst-italic text-white-50 mb-2">Bisnes Makin Mudah</p>
 
-        body {
-            background-color: var(--surface-bg);
-            color: var(--text-main);
-        }
+                        <h1 class="display-5 fw-bold text-uppercase lh-1 mb-2">
+                            YOUR OWN DIGITAL STORE.
+                        </h1>
+                        <h2 class="display-5 fw-bold text-uppercase lh-1 mb-4" style="color: #84f56b;">
+                            ORDERS STRAIGHT TO WHATSAPP.
+                        </h2>
 
-        .storefront-container {
-            max-width: 1020px;
-            margin: 0 auto;
-            padding-bottom: 5.5rem;
-        }
+                        <p class="fs-6 mb-4" style="color: rgba(255, 255, 255, 0.85); max-width: 540px;">
+                            Food, fashion, fresh produce, handmade crafts and more. Turn your products into a simple digital ordering experience. Let customers browse, choose, order and send their orders directly to your WhatsApp.
+                        </p>
 
-        /* Top Banner + White Info Strip */
-        .store-header-card {
-            background-color: #ffffff;
-            border: 1px solid var(--card-border);
-            border-radius: 1.15rem;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
-            margin-bottom: 1.15rem;
-        }
+                        <!-- Row 1: Two side-by-side pill buttons on sm+, stacked on mobile -->
+                        <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-3 mb-3">
+                            <a href="#section-10"
+                            class="btn rounded-pill px-4 py-2 fw-bold text-uppercase border-0 w-100 w-auto text-center"
+                            style="background-color: #f59322; color: #143326; font-size: 0.78rem; letter-spacing: 0.04em;">
+                                GET YOUR STORE SET UP
+                            </a>
 
-        .store-cover-banner {
-            position: relative;
-            height: 235px;
-            background: linear-gradient(120deg, #1b3629 0%, #0e291c 100%);
-            display: flex;
-            align-items: flex-end;
-            padding: 1.5rem 1.75rem;
-            color: #ffffff;
-            overflow: hidden;
-        }
+                            <a href="#section-5"
+                            class="btn btn-outline-light rounded-pill px-4 py-2 fw-bold text-uppercase w-100 w-auto text-center"
+                            style="font-size: 0.78rem; letter-spacing: 0.04em;">
+                                SEE HOW IT WORKS
+                            </a>
+                        </div>
 
-        @media (min-width: 768px) {
-            .store-cover-banner {
-                height: 265px;
-                padding: 1.75rem 2.25rem;
-            }
-        }
+                        <!-- Row 2: Third pill button positioned below on its own line -->
+                        <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center">
+                            <a href="#section-2"
+                            class="btn rounded-pill px-4 py-2 fw-bold text-uppercase border-0 d-inline-flex align-items-center justify-content-center gap-2 w-100 w-auto"
+                            style="background-color: #a8f878; color: #143326; font-size: 0.78rem; letter-spacing: 0.04em;">
+                                <span>EXPLORE KEDAI</span>
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
 
-        .store-cover-banner img.cover-photo {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 0;
-        }
+                    <!-- Right Column: Live Storefront Preview Card -->
+                    <div class="col-12 col-lg-5 d-flex justify-content-center">
+                        <a href="#section-6"
+                        class="card text-decoration-none text-center border-0 rounded-4 shadow-lg w-100 p-4 p-sm-5"
+                        style="max-width: 340px; background-color: #050706;">
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center p-2">
+                                <i class="bi bi-phone fs-1 mb-3" style="color: #84f56b;"></i>
+                                <div class="fw-semibold text-white fs-6 mb-1">Live Storefront Preview</div>
+                                <small class="text-white-50">Seamless WhatsApp Cart Integration</small>
+                            </div>
+                        </a>
+                    </div>
 
-        .store-cover-banner::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                180deg,
-                rgba(10, 20, 15, 0.08) 0%,
-                rgba(10, 20, 15, 0.45) 55%,
-                rgba(10, 20, 15, 0.82) 100%
-            );
-            z-index: 1;
-        }
-
-        .store-cover-text {
-            position: relative;
-            z-index: 2;
-        }
-
-        .store-cover-title {
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            line-height: 1.15;
-            margin-bottom: 0.3rem;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-        }
-
-        .store-cover-sub {
-            font-size: 0.92rem;
-            color: rgba(255, 255, 255, 0.92);
-            margin-bottom: 0;
-            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
-        }
-
-        .store-meta-strip {
-            padding: 0.8rem 1.5rem;
-            background-color: #ffffff;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 1.25rem;
-            font-size: 0.86rem;
-            color: #49544e;
-        }
-
-        .status-open-dot {
-            color: var(--open-green);
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-        }
-
-        .status-open-dot::before {
-            content: "";
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background-color: var(--open-green);
-            display: inline-block;
-        }
-
-        .status-closed-dot {
-            color: #dc2626;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-        }
-
-        .status-closed-dot::before {
-            content: "";
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background-color: #dc2626;
-            display: inline-block;
-        }
-
-        .map-link-inline {
-            color: var(--text-muted-ui);
-            text-decoration: none;
-        }
-
-        .map-link-inline:hover {
-            color: var(--forest-dark);
-            text-decoration: underline;
-        }
-
-        /* Search Bar */
-        .menu-search-wrapper {
-            background-color: #ffffff;
-            border: 1px solid var(--card-border);
-            border-radius: 0.85rem;
-            padding: 0.68rem 1.05rem;
-            display: flex;
-            align-items: center;
-            gap: 0.7rem;
-            margin-bottom: 0.95rem;
-            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
-        }
-
-        .menu-search-wrapper input {
-            border: none;
-            outline: none;
-            background: transparent;
-            width: 100%;
-            font-size: 0.9rem;
-            color: var(--text-main);
-        }
-
-        .menu-search-wrapper input::placeholder {
-            color: #9aa39e;
-        }
-
-        /* Category Pills */
-        .category-pills-strip {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-bottom: 1.15rem;
-        }
-
-        .cat-filter-btn {
-            border: 1px solid var(--card-border);
-            background-color: #ffffff;
-            color: #37413c;
-            font-size: 0.84rem;
-            font-weight: 500;
-            padding: 0.42rem 1.05rem;
-            border-radius: 50rem;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-
-        .cat-filter-btn:hover {
-            border-color: #cbd2ce;
-            background-color: #f9faf9;
-        }
-
-        .cat-filter-btn.active {
-            background-color: var(--forest-dark);
-            border-color: var(--forest-dark);
-            color: #ffffff;
-            font-weight: 600;
-        }
-
-        /* 2-Column Product Cards Grid */
-        .product-grid-2col {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 0.95rem;
-        }
-
-        @media (min-width: 768px) {
-            .product-grid-2col {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 1rem;
-            }
-        }
-
-        .catalog-item-card {
-            background-color: #ffffff;
-            border: 1px solid var(--card-border);
-            border-radius: 1rem;
-            padding: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
-            transition: box-shadow 0.16s ease, border-color 0.16s ease;
-        }
-
-        .catalog-item-card:hover {
-            border-color: #d3dad6;
-            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
-        }
-
-        .catalog-thumb {
-            width: 96px;
-            height: 96px;
-            border-radius: 0.75rem;
-            object-fit: cover;
-            flex-shrink: 0;
-            background-color: #f2f4f3;
-            border: 1px solid #eceeed;
-        }
-
-        .catalog-details {
-            flex-grow: 1;
-            min-width: 0;
-        }
-
-        .catalog-title {
-            font-weight: 700;
-            font-size: 0.96rem;
-            color: var(--text-main);
-            margin-bottom: 0.15rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .catalog-desc {
-            font-size: 0.8rem;
-            color: var(--text-muted-ui);
-            margin-bottom: 0.55rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .catalog-bottom-row {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 0.5rem;
-        }
-
-        .catalog-price {
-            font-weight: 700;
-            font-size: 0.92rem;
-            color: var(--text-main);
-            line-height: 1.25;
-        }
-
-        .catalog-avail {
-            font-size: 0.76rem;
-            color: #7c8580;
-            margin-top: 0.1rem;
-        }
-
-        .btn-tambah-pill {
-            background-color: var(--forest-dark);
-            color: #ffffff;
-            border: none;
-            border-radius: 50rem;
-            padding: 0.42rem 0.95rem;
-            font-size: 0.82rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: background-color 0.15s ease;
-        }
-
-        .btn-tambah-pill:hover:not(:disabled) {
-            background-color: var(--forest-hover);
-        }
-
-        .btn-tambah-pill:disabled {
-            background-color: #cbd5e1;
-            cursor: not-allowed;
-        }
-
-        .qty-pill-stepper {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            background-color: var(--stepper-bg);
-            padding: 0.22rem 0.35rem;
-            border-radius: 50rem;
-            flex-shrink: 0;
-        }
-
-        .qty-pill-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: none;
-            background-color: var(--forest-dark);
-            color: #ffffff;
-            font-size: 0.72rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .qty-pill-val {
-            font-weight: 700;
-            font-size: 0.84rem;
-            color: var(--forest-dark);
-            min-width: 14px;
-            text-align: center;
-        }
-
-        /* Floating Checkout Bar */
-        .floating-order-bar {
-            position: fixed;
-            bottom: 18px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 32px);
-            max-width: 680px;
-            z-index: 1040;
-            display: none;
-        }
-
-        .floating-order-bar.active {
-            display: block;
-        }
-
-        .floating-order-btn {
-            width: 100%;
-            background-color: var(--forest-dark);
-            color: #ffffff;
-            border: none;
-            border-radius: 50rem;
-            padding: 0.85rem 1.35rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 10px 26px rgba(14, 59, 36, 0.32);
-            cursor: pointer;
-        }
-    </style>
-
-    <div class="storefront-container" id="storefrontRoot">
-
-        <!-- Hero Banner + Metadata Strip -->
-        <div class="store-header-card">
-            <div class="store-cover-banner">
-                <img src="<?= $banner_img ?>"
-                     alt="<?= htmlspecialchars($store_name) ?>"
-                     class="cover-photo"
-                     onerror="this.style.display='none';">
-                <div class="store-cover-text">
-                    <h1 class="store-cover-title" style="font-size: <?= $title_size ?>;">
-                        <?= htmlspecialchars($store_name) ?>
-                    </h1>
-                    <?php if ($tagline !== ''): ?>
-                        <p class="store-cover-sub"><?= htmlspecialchars($tagline) ?></p>
-                    <?php endif; ?>
                 </div>
             </div>
+        </section>
 
-            <div class="store-meta-strip">
-                <?php if ($is_open): ?>
-                    <span class="status-open-dot">Buka Sekarang</span>
-                <?php else: ?>
-                    <span class="status-closed-dot">Tutup</span>
-                <?php endif; ?>
+        <!-- Section 02: One Platform. Every Kind of Kedai. -->
+        <section id="section-2" class="container-fluid py-5" style="background-color: #f4f5ef; color: #14261d;">
+            <div class="container py-3 py-lg-4">
 
-                <span><i class="fa-regular fa-clock me-1 text-secondary"></i> <?= htmlspecialchars($hours) ?></span>
+                <!-- Section Header -->
+                <div class="text-center mb-5">
+                    <p class="fst-italic fw-medium mb-1" style="color: #3f7d32;">From kuih to kain, sayur to sulaman.</p>
+                    <h2 class="display-6 fw-bold text-uppercase lh-1 mb-0" style="color: #0e1f17;">
+                        ONE PLATFORM.<br>
+                        EVERY KIND OF KEDAI.
+                    </h2>
+                </div>
 
-                <span>
-                    <i class="fa-solid fa-location-dot me-1 text-secondary"></i>
-                    <?= htmlspecialchars($city) ?>
-                    &middot;
-                    <a href="<?= htmlspecialchars($maps_url) ?>" target="_blank" rel="noopener" class="map-link-inline">Lihat peta</a>
-                </span>
-            </div>
-        </div>
+                <!-- Top Row: 2 Featured Cards -->
+                <div class="row g-4 mb-4">
 
-        <!-- Search Bar -->
-        <div class="menu-search-wrapper">
-            <i class="fa-solid fa-magnifying-glass text-secondary"></i>
-            <input type="text" id="storeSearchInput" placeholder="Cari menu" oninput="applyStoreFilters()">
-        </div>
+                    <!-- Card 1: Food & Beverages -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card position-relative overflow-hidden border-0 rounded-4 shadow-sm h-100" style="min-height: 310px; background-color: #163325;">
+                            <img
+                                src="https://placehold.co/800x500/b7c2ba/163325?text=Food+%26+Beverages+Photo"
+                                alt="Food and Beverages Placeholder"
+                                class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+                            >
+                            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(180deg, rgba(22, 51, 37, 0.12) 0%, rgba(16, 40, 29, 0.78) 68%, rgba(12, 31, 22, 0.94) 100%);"></div>
 
-        <!-- Category Pills -->
-        <div class="category-pills-strip" id="storeCategoryPills">
-            <?php foreach ($categories as $idx => $cat): ?>
-                <button type="button"
-                        class="cat-filter-btn <?= $idx === 0 ? 'active' : '' ?>"
-                        data-category="<?= htmlspecialchars($cat) ?>"
-                        onclick="selectStoreCategory(this)">
-                    <?= htmlspecialchars($cat) ?>
-                </button>
-            <?php endforeach; ?>
-        </div>
-
-        <!-- Product Grid -->
-        <?php if (empty($menu_items)): ?>
-            <div class="bg-white rounded-4 p-5 text-center text-muted border">
-                Tiada menu tersedia buat masa ini.
-            </div>
-        <?php else: ?>
-            <div class="product-grid-2col" id="storeProductGrid">
-                <?php foreach ($menu_items as $item): ?>
-                    <?php
-                        $item_id = (int)$item['id'];
-                        $item_name = $item['name'];
-                        $item_desc = $item['description'] ?? '';
-                        $item_price = (float)$item['price'];
-                        $item_stock = (int)$item['stock'];
-                        $item_cat = trim($item['category'] ?? '');
-                        $item_img = !empty($item['image'])
-                            ? 'uploads/menu/' . htmlspecialchars($item['image'])
-                            : 'uploads/menu/default_food.png';
-                    ?>
-                    <div class="catalog-item-card store-item-card"
-                         data-category="<?= htmlspecialchars($item_cat) ?>"
-                         data-search="<?= strtolower(htmlspecialchars($item_name . ' ' . $item_desc . ' ' . $item_cat)) ?>">
-
-                        <img src="<?= $item_img ?>"
-                             alt="<?= htmlspecialchars($item_name) ?>"
-                             class="catalog-thumb"
-                             onerror="this.src='https://placehold.co/160x160/f2f4f3/0e3b24?text=Item';">
-
-                        <div class="catalog-details">
-                            <div class="catalog-title" title="<?= htmlspecialchars($item_name) ?>">
-                                <?= htmlspecialchars($item_name) ?>
-                            </div>
-                            <div class="catalog-desc" title="<?= htmlspecialchars($item_desc) ?>">
-                                <?= htmlspecialchars($item_desc) ?>
-                            </div>
-
-                            <div class="catalog-bottom-row">
+                            <div class="card-body position-relative d-flex flex-column justify-content-between p-4 p-sm-5 text-white">
                                 <div>
-                                    <div class="catalog-price">RM <?= number_format($item_price, 2) ?></div>
-                                    <div class="catalog-avail">Tersedia</div>
+                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; background-color: #9df557; color: #132c1e;">
+                                        <i class="bi bi-cup-hot-fill fs-5"></i>
+                                    </span>
                                 </div>
 
-                                <div id="item-action-<?= $item_id ?>">
-                                    <button type="button"
-                                            class="btn-tambah-pill"
-                                            <?= $is_open ? '' : 'disabled' ?>
-                                            onclick="changeItemQty(<?= $item_id ?>, 1)">
-                                        <i class="fa-solid fa-plus" style="font-size: 0.72rem;"></i> Tambah
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-
-    </div>
-
-    <!-- Floating Checkout Bar -->
-    <?php if ($is_open): ?>
-        <div class="floating-order-bar" id="floatingOrderBar">
-            <button type="button" class="floating-order-btn" data-bs-toggle="modal" data-bs-target="#checkoutModal">
-                <div class="d-flex align-items-center gap-2 fw-bold">
-                    <span class="badge bg-warning text-dark rounded-pill" id="floatingItemCount">0</span>
-                    <span>Lihat Pesanan &amp; Checkout</span>
-                </div>
-                <span class="fw-bold" id="floatingTotalAmount">RM 0.00</span>
-            </button>
-        </div>
-    <?php endif; ?>
-
-    <!-- Checkout Modal -->
-    <div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="modal-header text-white py-3 px-4" style="background-color: #0e3b24;">
-                    <h5 class="modal-title fw-bold">
-                        <i class="fa-solid fa-receipt me-2 text-warning"></i>Your Order
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body bg-light p-4">
-                    <div class="cart-items-container mb-3 bg-white p-3 rounded-4 shadow-sm border">
-                        <p class="text-muted text-center py-3 mb-0">Your order is empty.</p>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-4 shadow-sm border mb-3">
-                        <div class="d-flex justify-content-between mb-3 fw-bold fs-5">
-                            <span>Total:</span>
-                            <span class="cart-total-display text-success">RM 0.00</span>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="form-label fw-semibold small text-muted">Your Name *</label>
-                            <input type="text" class="form-control customer-name-input rounded-3 shadow-none" placeholder="e.g. John Doe" required>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="form-label fw-semibold small text-muted">Phone Number *</label>
-                            <input type="tel" class="form-control customer-phone-input rounded-3 shadow-none" placeholder="e.g. +60123456789" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small text-muted">Order Type *</label>
-                            <select class="form-select order-type-select rounded-3 shadow-none">
-                                <option value="delivery">Delivery</option>
-                                <option value="pickup">Self Pickup</option>
-                            </select>
-                        </div>
-
-                        <div class="delivery-address-section mb-2">
-                            <label class="form-label fw-semibold small text-muted">Delivery Address *</label>
-                            <textarea class="form-control customer-address-input rounded-3 shadow-none" rows="2" placeholder="Street name, house number..."></textarea>
-
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-outline-dark btn-sm w-100 rounded-pill get-location-btn fw-semibold">
-                                    <i class="fa-solid fa-map-pin me-1 text-danger"></i> Use Google Maps Pin Location
-                                </button>
-                                <input type="hidden" class="maps-pin-url-input" value="">
-                            </div>
-                        </div>
-                    </div>
-
-                    <?php if ($is_open): ?>
-                        <button type="button" class="btn btn-success w-100 fw-bold py-3 rounded-pill shadow-sm whatsapp-order-btn" style="background-color: #0e3b24; border-color: #0e3b24;" disabled>
-                            <i class="fa-brands fa-whatsapp me-2 fs-5"></i> Submit Order via WhatsApp
-                        </button>
-                    <?php else: ?>
-                        <button type="button" class="btn btn-secondary w-100 fw-bold py-3 rounded-pill" disabled>Vendor is Closed</button>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    const vendorName = <?= json_encode($store_name, JSON_UNESCAPED_UNICODE) ?>;
-    const vendorWhatsApp = <?= json_encode(preg_replace('/[^0-9]/', '', $vendor['whatsapp_number'] ?? '')) ?>;
-    const storeIsOpen = <?= $is_open ? 'true' : 'false' ?>;
-
-    const menuItemsData = <?= json_encode(array_map(function($item) {
-        return [
-            'id' => (int)$item['id'],
-            'name' => $item['name'],
-            'price' => (float)$item['price'],
-            'stock' => (int)$item['stock']
-        ];
-    }, $menu_items), JSON_UNESCAPED_UNICODE) ?>;
-
-    let activeCategory = 'Semua';
-    let cart = [];
-
-    function selectStoreCategory(btn) {
-        document.querySelectorAll('#storeCategoryPills .cat-filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activeCategory = btn.getAttribute('data-category') || 'Semua';
-        applyStoreFilters();
-    }
-
-    function applyStoreFilters() {
-        const query = (document.getElementById('storeSearchInput')?.value || '').trim().toLowerCase();
-        document.querySelectorAll('#storeProductGrid .store-item-card').forEach(card => {
-            const cat = card.getAttribute('data-category') || '';
-            const searchHaystack = card.getAttribute('data-search') || '';
-            const matchesCat = (activeCategory === 'Semua') || (cat.toLowerCase() === activeCategory.toLowerCase());
-            const matchesQuery = (query === '') || searchHaystack.includes(query);
-            card.style.display = (matchesCat && matchesQuery) ? 'flex' : 'none';
-        });
-    }
-
-    function changeItemQty(itemId, delta) {
-        if (!storeIsOpen) return;
-        const prod = menuItemsData.find(p => p.id === itemId);
-        if (!prod) return;
-
-        const idx = cart.findIndex(c => c.id === itemId);
-        const currentQty = idx >= 0 ? cart[idx].quantity : 0;
-        const nextQty = currentQty + delta;
-
-        if (nextQty > prod.stock) {
-            alert(`Sorry, only ${prod.stock} units of "${prod.name}" are available in stock.`);
-            return;
-        }
-
-        if (nextQty <= 0) {
-            if (idx >= 0) cart.splice(idx, 1);
-        } else if (idx >= 0) {
-            cart[idx].quantity = nextQty;
-        } else {
-            cart.push({
-                id: prod.id,
-                name: prod.name,
-                price: prod.price,
-                quantity: nextQty,
-                maxStock: prod.stock,
-                remark: ''
-            });
-        }
-
-        renderItemActionControl(itemId);
-        updateCartUI();
-    }
-
-    function renderItemActionControl(itemId) {
-        const container = document.getElementById('item-action-' + itemId);
-        if (!container) return;
-
-        const found = cart.find(c => c.id === itemId);
-        const qty = found ? found.quantity : 0;
-
-        if (qty > 0) {
-            container.innerHTML = `
-                <div class="qty-pill-stepper">
-                    <button type="button" class="qty-pill-btn" onclick="changeItemQty(${itemId}, -1)" aria-label="Kurang">
-                        <i class="fa-solid fa-minus"></i>
-                    </button>
-                    <span class="qty-pill-val">${qty}</span>
-                    <button type="button" class="qty-pill-btn" onclick="changeItemQty(${itemId}, 1)" aria-label="Tambah">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
-                </div>
-            `;
-        } else {
-            container.innerHTML = `
-                <button type="button" class="btn-tambah-pill" ${storeIsOpen ? '' : 'disabled'} onclick="changeItemQty(${itemId}, 1)">
-                    <i class="fa-solid fa-plus" style="font-size: 0.72rem;"></i> Tambah
-                </button>
-            `;
-        }
-    }
-
-    function updateCartUI() {
-        const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
-        const bar = document.getElementById('floatingOrderBar');
-        const countEl = document.getElementById('floatingItemCount');
-        const totalEl = document.getElementById('floatingTotalAmount');
-
-        if (countEl) countEl.textContent = totalQty;
-
-        if (cart.length === 0) {
-            if (bar) bar.classList.remove('active');
-            if (totalEl) totalEl.textContent = 'RM 0.00';
-
-            document.querySelectorAll('.cart-items-container').forEach(el => {
-                el.innerHTML = '<p class="text-muted text-center py-3 mb-0">Your order is empty.</p>';
-            });
-            document.querySelectorAll('.cart-total-display').forEach(el => {
-                el.textContent = 'RM 0.00';
-            });
-            document.querySelectorAll('.whatsapp-order-btn').forEach(btn => btn.disabled = true);
-            return;
-        }
-
-        let html = '<ul class="list-group list-group-flush">';
-        let total = 0;
-
-        cart.forEach((item, index) => {
-            const lineTotal = item.price * item.quantity;
-            total += lineTotal;
-            const remarkVal = item.remark ? item.remark.replace(/"/g, '&quot;') : '';
-
-            html += `
-                <li class="list-group-item px-0 py-2">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div>
-                            <h6 class="mb-0 fw-bold">${item.name}</h6>
-                            <small class="text-muted">RM ${item.price.toFixed(2)} x ${item.quantity}</small>
-                        </div>
-                        <div class="btn-group btn-group-sm">
-                            <button type="button" class="btn btn-outline-secondary" onclick="changeQtyByIndex(${index}, -1)">-</button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="changeQtyByIndex(${index}, 1)">+</button>
-                            <button type="button" class="btn btn-outline-danger" onclick="removeCartIndex(${index})"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>
-                    <div class="mt-1">
-                        <input type="text"
-                            class="form-control form-control-sm bg-light rounded-3"
-                            placeholder="Add remarks (e.g. Size / colour / note)"
-                            value="${remarkVal}"
-                            oninput="updateItemRemark(${index}, this.value)">
-                    </div>
-                </li>
-            `;
-        });
-
-        html += '</ul>';
-
-        if (bar) bar.classList.add('active');
-        if (totalEl) totalEl.textContent = 'RM ' + total.toFixed(2);
-
-        document.querySelectorAll('.cart-items-container').forEach(el => {
-            el.innerHTML = html;
-        });
-        document.querySelectorAll('.cart-total-display').forEach(el => {
-            el.textContent = 'RM ' + total.toFixed(2);
-        });
-        document.querySelectorAll('.whatsapp-order-btn').forEach(btn => btn.disabled = false);
-    }
-
-    function updateItemRemark(index, text) {
-        if (cart[index]) {
-            cart[index].remark = text.trim();
-        }
-    }
-
-    function changeQtyByIndex(index, delta) {
-        if (!cart[index]) return;
-        changeItemQty(cart[index].id, delta);
-    }
-
-    function removeCartIndex(index) {
-        if (!cart[index]) return;
-        const id = cart[index].id;
-        cart.splice(index, 1);
-        renderItemActionControl(id);
-        updateCartUI();
-    }
-
-    document.querySelectorAll('.order-type-select').forEach(selectElem => {
-        selectElem.addEventListener('change', function() {
-            const val = this.value;
-            document.querySelectorAll('.delivery-address-section').forEach(section => {
-                section.style.display = (val === 'pickup') ? 'none' : 'block';
-            });
-        });
-    });
-
-    document.querySelectorAll('.get-location-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const button = this;
-            if (!navigator.geolocation) {
-                alert('Geolocation is not supported by your browser');
-                return;
-            }
-
-            button.disabled = true;
-            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Getting Location...';
-
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    const mapsUrl = `https://www.maps.google.com/?q=${lat},${lng}`;
-
-                    document.querySelectorAll('.customer-address-input').forEach(textarea => {
-                        textarea.value = `Google Maps Pin Location:\n${mapsUrl}`;
-                    });
-                    document.querySelectorAll('.maps-pin-url-input').forEach(input => {
-                        input.value = mapsUrl;
-                    });
-
-                    button.disabled = false;
-                    button.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i> Location Pinned Successfully!';
-                },
-                function() {
-                    alert('Unable to retrieve your location. Please enter your address manually.');
-                    button.disabled = false;
-                    button.innerHTML = '<i class="fa-solid fa-map-pin me-1 text-success"></i> Use Google Maps Pin Location';
-                },
-                { timeout: 10000, enableHighAccuracy: true }
-            );
-        });
-    });
-
-    document.querySelectorAll('.whatsapp-order-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            if (cart.length === 0) return;
-
-            const activeContainer = this.closest('.card-body') || this.closest('.modal-body');
-            const customerName = activeContainer.querySelector('.customer-name-input').value.trim();
-            const customerPhone = activeContainer.querySelector('.customer-phone-input').value.trim();
-            const orderType = activeContainer.querySelector('.order-type-select').value;
-            const customerAddress = activeContainer.querySelector('.customer-address-input').value.trim();
-
-            if (!customerName || !customerPhone) {
-                alert('Please enter your name and phone number.');
-                activeContainer.querySelector('.customer-name-input').focus();
-                return;
-            }
-
-            if (orderType === 'delivery' && !customerAddress) {
-                alert('Please provide a delivery address or use the Google Maps pin feature.');
-                activeContainer.querySelector('.customer-address-input').focus();
-                return;
-            }
-
-            const modalEl = document.getElementById('checkoutModal');
-            if (modalEl) {
-                const modalInstance = bootstrap.Modal.getInstance(modalEl);
-                if (modalInstance) modalInstance.hide();
-            }
-
-            let message = `Hello *${vendorName}*, I would like to place an *${orderType.toUpperCase()}* order:\n\n`;
-            message += `*Customer Name:* ${customerName}\n`;
-            message += `*Phone Number:* ${customerPhone}\n`;
-            message += `*Order Type:* ${orderType.toUpperCase()}\n`;
-
-            if (orderType === 'delivery') {
-                message += `*Delivery Address:* ${customerAddress}\n`;
-            }
-            message += `--------------------------------\n`;
-
-            let total = 0;
-            let receiptItemsHtml = '';
-
-            cart.forEach(item => {
-                const subtotal = item.price * item.quantity;
-                total += subtotal;
-
-                let itemLine = `• ${item.name} x ${item.quantity} - RM ${subtotal.toFixed(2)}`;
-                if (item.remark) {
-                    itemLine += `\n  _(Note: ${item.remark})_`;
-                }
-                message += `${itemLine}\n`;
-
-                receiptItemsHtml += `
-                    <li class="list-group-item d-flex justify-content-between align-items-start px-0">
-                        <div>
-                            <h6 class="mb-0 fw-bold">${item.name}</h6>
-                            <small class="text-muted">RM ${item.price.toFixed(2)} x ${item.quantity}</small>
-                            ${item.remark ? `<br><small class="text-danger"><em>Note: ${item.remark}</em></small>` : ''}
-                        </div>
-                        <span class="fw-bold">RM ${subtotal.toFixed(2)}</span>
-                    </li>
-                `;
-            });
-
-            message += `--------------------------------\n`;
-            message += `*Total Amount:* RM ${total.toFixed(2)}\n\n`;
-            message += `Please confirm my order. Thank you!`;
-
-            const formData = new FormData();
-            formData.append('vendor_id', <?= $vendor_id ?>);
-            formData.append('customer_name', `${customerName} (${customerPhone}) - ${orderType.toUpperCase()}`);
-            formData.append('total_amount', total);
-            formData.append('cart_items', JSON.stringify(cart));
-
-            fetch('log_order.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappURL = `https://wa.me/${vendorWhatsApp}?text=${encodedMessage}`;
-            window.open(whatsappURL, '_blank');
-
-            const rootEl = document.getElementById('storefrontRoot');
-            rootEl.innerHTML = `
-                <div class="row justify-content-center py-4">
-                    <div class="col-md-7">
-                        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-                            <div class="card-header text-white text-center py-4" style="background-color: #0e3b24;">
-                                <i class="fa-solid fa-circle-check fs-1 mb-2" style="color: #b2ff81;"></i>
-                                <h3 class="fw-bold mb-0">Order Sent Successfully!</h3>
-                                <p class="mb-0 small opacity-75">Your order has been submitted to <strong>${vendorName}</strong> via WhatsApp.</p>
-                            </div>
-                            <div class="card-body p-4 bg-white">
-                                <h5 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-receipt me-2 text-success"></i>Order Receipt</h5>
-                                <p class="mb-1 text-muted small"><strong>Customer Name:</strong> ${customerName}</p>
-                                <p class="mb-1 text-muted small"><strong>Phone:</strong> ${customerPhone}</p>
-                                <p class="mb-1 text-muted small"><strong>Order Type:</strong> ${orderType.toUpperCase()}</p>
-                                ${orderType === 'delivery' ? `<p class="mb-1 text-muted small"><strong>Address:</strong> ${customerAddress}</p>` : ''}
-                                <p class="mb-3 text-muted small"><strong>Vendor:</strong> ${vendorName}</p>
-                                <hr>
-                                <ul class="list-group list-group-flush mb-3">
-                                    ${receiptItemsHtml}
-                                </ul>
-                                <hr>
-                                <div class="d-flex justify-content-between mb-4 fw-bold fs-5">
-                                    <span>Total:</span>
-                                    <span class="text-success">RM ${total.toFixed(2)}</span>
-                                </div>
-                                <div class="d-grid gap-2">
-                                    <a href="index.php?token=<?= urlencode($vendor_token) ?>" class="btn btn-dark fw-bold rounded-pill py-2" style="background-color: #0e3b24;">
-                                        <i class="fa-solid fa-arrow-left me-2"></i> Back to Store Menu
-                                    </a>
-                                    <a href="index.php" class="btn btn-outline-secondary rounded-pill py-2">
-                                        Browse Other Vendors
-                                    </a>
+                                <div class="pt-5 mt-4">
+                                    <h3 class="h4 fw-bold text-uppercase mb-2">FOOD &amp; BEVERAGES</h3>
+                                    <p class="small mb-4" style="color: rgba(255, 255, 255, 0.85);">
+                                        Hawkers, kuih sellers, home bakers, cafés, restaurants and catering.
+                                    </p>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="#section-10"
+                                        class="btn rounded-pill px-3 py-2 fw-bold text-uppercase border-0 d-inline-flex align-items-center gap-1"
+                                        style="background-color: #9df557; color: #132c1e; font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            <span>SEE SAMPLE STORE</span>
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                        <a href="#section-6"
+                                        class="btn rounded-pill px-3 py-2 fw-semibold text-uppercase text-white"
+                                        style="background-color: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.35); font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            SAMPLE STORE
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-        });
-    });
-    </script>
 
-<?php
-} else {
-    // ----------------------------------------------------
-    // LANDING PAGE VIEW (Rows 1 to 8 + remaining placeholders)
-    // ----------------------------------------------------
-    ?>
-
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        /* ====================================================
-        ROW 1: COMPLETE HERO SECTION STYLES
-        ==================================================== */
-        .landing-hero-green-v2 {
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            padding: 6rem 1rem 5rem 1rem;
-            background-color: #0b291a;
-            color: #ffffff;
-            overflow: hidden;
-        }
-
-        /* 4-Image Background Slideshow Layer */
-        .hero-slideshow {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        .hero-slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            opacity: 0;
-            animation: heroSlideFade 24s infinite ease-in-out;
-        }
-
-        .hero-slide:nth-child(1) {
-            background-image: linear-gradient(135deg, rgba(41, 11, 11, 0.84), rgba(11, 41, 26, 0.92)),
-                            url('/simple_ordering_multivendor/assets/hero-bg-1.jpg');
-            animation-delay: 0s;
-        }
-        .hero-slide:nth-child(2) {
-            background-image: linear-gradient(135deg, rgba(35, 133, 212, 0.84), rgba(11, 41, 26, 0.92)),
-                            url('/simple_ordering_multivendor/assets/hero-bg-2.jpg');
-            animation-delay: 6s;
-        }
-        .hero-slide:nth-child(3) {
-            background-image: linear-gradient(135deg, rgba(11, 41, 26, 0.84), rgba(11, 41, 26, 0.92)),
-                            url('/simple_ordering_multivendor/assets/hero-bg-3.jpg');
-            animation-delay: 12s;
-        }
-        .hero-slide:nth-child(4) {
-            background-image: linear-gradient(135deg, rgba(11, 41, 26, 0.84), rgba(11, 41, 26, 0.92)),
-                            url('/simple_ordering_multivendor/assets/hero-bg-4.jpg');
-            animation-delay: 18s;
-        }
-
-        @keyframes heroSlideFade {
-            0% {
-                opacity: 0;
-                transform: scale(1);
-            }
-            8% {
-                opacity: 1;
-            }
-            25% {
-                opacity: 1;
-                transform: scale(1.04);
-            }
-            33% {
-                opacity: 0;
-            }
-            100% {
-                opacity: 0;
-            }
-        }
-
-        /* Foreground Content Container */
-        .landing-hero-green-v2 .landing-content-inner {
-            position: relative;
-            z-index: 2;
-            max-width: 1140px;
-            margin: 0 auto;
-        }
-
-        /* Hero Typography */
-        .hero-tagline {
-            color: #b2ff81;
-            font-family: cursive;
-            font-size: 1.25rem;
-            font-weight: 700;
-            font-style: italic;
-        }
-
-        .hero-headline {
-            font-weight: 800;
-            line-height: 1.05;
-            letter-spacing: -1.5px;
-            font-size: 3.5rem;
-            color: #ffffff;
-            text-transform: uppercase;
-        }
-
-        .hero-headline .text-lime {
-            color: #b2ff81;
-        }
-
-        .hero-subtext {
-            color: rgba(255, 255, 255, 0.82);
-            font-size: 1rem;
-            line-height: 1.65;
-            max-width: 510px;
-        }
-
-        /* Hero CTA Buttons */
-        .btn-orange-pill {
-            background: linear-gradient(135deg, #ffa726, #fb8c00);
-            color: #ffffff !important;
-            border-radius: 50rem;
-            padding: 0.75rem 1.8rem;
-            font-weight: 700;
-            font-size: 0.9rem;
-            letter-spacing: 0.3px;
-            border: none;
-            box-shadow: 0 4px 15px rgba(251, 140, 0, 0.32);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .btn-orange-pill:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(251, 140, 0, 0.45);
-        }
-
-        .btn-outline-custom {
-            background: transparent;
-            color: #ffffff !important;
-            border: 1.5px solid rgba(255, 255, 255, 0.45);
-            border-radius: 50rem;
-            padding: 0.75rem 1.8rem;
-            font-weight: 700;
-            font-size: 0.9rem;
-            letter-spacing: 0.3px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            transition: all 0.2s ease;
-        }
-
-        .btn-outline-custom:hover {
-            border-color: #ffffff;
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .btn-lime-pill-solid {
-            background-color: #b2ff81;
-            color: #0b291a !important;
-            border-radius: 50rem;
-            padding: 0.65rem 1.75rem;
-            font-weight: 700;
-            font-size: 0.9rem;
-            letter-spacing: 0.3px;
-            border: none;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            box-shadow: 0 4px 14px rgba(178, 255, 129, 0.25);
-            transition: transform 0.2s ease, background-color 0.2s ease;
-        }
-
-        .btn-lime-pill-solid:hover {
-            background-color: #9be667;
-            transform: translateY(-2px);
-        }
-
-        /* Right Column Phone Mockup */
-        .phone-mockup-container {
-            position: relative;
-            max-width: 290px;
-            margin: 0 auto;
-        }
-
-        /* Responsive Mobile Adjustments */
-        @media (max-width: 768px) {
-            .landing-hero-green-v2 {
-                padding: 4rem 1rem 3.5rem 1rem;
-            }
-            .hero-headline {
-                font-size: 2.35rem;
-                letter-spacing: -1px;
-            }
-        }
-        /* ====================================================
-        ROW 2: ONE PLATFORM, EVERY KIND OF KEDAI
-        ==================================================== */
-        .landing-row-platform {
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            background-color: #f3f4ee;
-            color: #1a1a1a;
-            padding: 5rem 1rem;
-        }
-
-        .landing-row-platform .landing-content-inner {
-            max-width: 1140px;
-            margin: 0 auto;
-        }
-
-        .platform-tagline {
-            color: #5b8c3e;
-            font-family: cursive;
-            font-size: 1.15rem;
-            font-weight: 700;
-        }
-
-        .platform-headline {
-            font-weight: 800;
-            line-height: 1.05;
-            letter-spacing: -1.5px;
-            font-size: 3rem;
-            color: #0b291a;
-            text-transform: uppercase;
-        }
-
-        /* Category Feature Card Style */
-        .category-feature-card {
-            position: relative;
-            border-radius: 1.25rem;
-            overflow: hidden;
-            min-height: 380px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 2rem;
-            color: #ffffff;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-            background-size: cover;
-            background-position: center;
-        }
-
-        /* Specific card background images (replace with your assets) */
-        .cat-card-food {
-            background-image: linear-gradient(to top, rgba(11, 41, 26, 0.9) 15%, rgba(11, 41, 26, 0.3) 70%, rgba(11, 41, 26, 0.1)),
-                            url('/simple_ordering_multivendor/assets/cat-food.jpg');
-        }
-        .cat-card-fashion {
-            background-image: linear-gradient(to top, rgba(11, 41, 26, 0.9) 15%, rgba(11, 41, 26, 0.3) 70%, rgba(11, 41, 26, 0.1)),
-                            url('/simple_ordering_multivendor/assets/cat-fashion.jpg');
-        }
-        .cat-card-fresh {
-            background-image: linear-gradient(to top, rgba(11, 41, 26, 0.9) 15%, rgba(11, 41, 26, 0.3) 70%, rgba(11, 41, 26, 0.1)),
-                            url('/simple_ordering_multivendor/assets/cat-fresh.jpg');
-        }
-        .cat-card-crafts {
-            background-image: linear-gradient(to top, rgba(11, 41, 26, 0.9) 15%, rgba(11, 41, 26, 0.3) 70%, rgba(11, 41, 26, 0.1)),
-                            url('/simple_ordering_multivendor/assets/cat-crafts.jpg');
-        }
-        .cat-card-more {
-            background-image: linear-gradient(to top, rgba(11, 41, 26, 0.9) 15%, rgba(11, 41, 26, 0.3) 70%, rgba(11, 41, 26, 0.1)),
-                            url('/simple_ordering_multivendor/assets/cat-more.jpg');
-        }
-
-        .category-icon-badge {
-            position: absolute;
-            top: 1.5rem;
-            left: 1.5rem;
-            width: 48px;
-            height: 48px;
-            background-color: #b2ff81;
-            color: #0b291a;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-
-        .category-feature-card h3 {
-            font-weight: 800;
-            font-size: 1.65rem;
-            letter-spacing: -0.5px;
-            margin-bottom: 0.5rem;
-            color: #ffffff;
-        }
-
-        .category-feature-card p {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 0.9rem;
-            line-height: 1.5;
-            margin-bottom: 1.25rem;
-        }
-
-        .card-action-btns {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .btn-sample-action {
-            background-color: #b2ff81;
-            color: #0b291a !important;
-            font-weight: 700;
-            font-size: 0.8rem;
-            border-radius: 50rem;
-            padding: 0.45rem 1rem;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            transition: transform 0.2s ease, background-color 0.2s ease;
-        }
-        .btn-sample-action:hover {
-            background-color: #9be667;
-            transform: translateY(-1px);
-        }
-
-        .btn-sample-outline {
-            background: rgba(255, 255, 255, 0.15);
-            color: #ffffff !important;
-            font-weight: 600;
-            font-size: 0.8rem;
-            border-radius: 50rem;
-            padding: 0.45rem 1rem;
-            text-decoration: none;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(4px);
-            transition: background 0.2s ease;
-        }
-        .btn-sample-outline:hover {
-            background: rgba(255, 255, 255, 0.25);
-            color: #ffffff;
-        }
-
-        @media (max-width: 768px) {
-            .platform-headline {
-                font-size: 2.25rem;
-            }
-            .category-feature-card {
-                min-height: 340px;
-            }
-        }
-        /* Row 3: Light Clean Section */
-        .landing-row-white {
-            background-color: #ffffff;
-            padding: 4rem 2rem;
-            border: 1px solid #eaeaea;
-        }
-        /* Row 4: How Does It Work Section */
-        .landing-row-how-it-works {
-            background-color: #ffffff;
-            padding: 5rem 2rem;
-            border: 1px solid #eaeaea;
-        }
-        /* ====================================================
-        ROW 5: YOUR STORE. YOUR PRODUCTS. YOUR WAY.
-        ==================================================== */
-        .landing-row-showcase {
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            background-color: #f3f4ee;
-            color: #0b291a;
-            padding: 5.5rem 1rem;
-            overflow: hidden;
-        }
-
-        .landing-row-showcase .landing-content-inner {
-            max-width: 1040px;
-            margin: 0 auto;
-        }
-
-        .showcase-tagline {
-            color: #5b8c3e;
-            font-family: cursive;
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .showcase-headline {
-            font-weight: 800;
-            line-height: 1.05;
-            letter-spacing: -1.5px;
-            font-size: 3.1rem;
-            color: #0b291a;
-            text-transform: uppercase;
-        }
-
-        /* Phone Mockup Fan Display */
-        .showcase-phone-col {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .showcase-phone-img {
-            width: 100%;
-            max-width: 260px;
-            height: auto;
-            border-radius: 2.2rem;
-            filter: drop-shadow(0 18px 28px rgba(11, 41, 26, 0.22));
-            transition: transform 0.3s ease;
-        }
-
-        .phone-tilt-left {
-            transform: rotate(-3.5deg) translateY(14px);
-        }
-
-        .phone-center-elevated {
-            max-width: 280px;
-            transform: translateY(-10px);
-            z-index: 2;
-        }
-
-        .phone-tilt-right {
-            transform: rotate(3.5deg) translateY(14px);
-        }
-
-        .showcase-phone-img:hover {
-            transform: translateY(-6px) rotate(0deg);
-        }
-
-        /* Numbered Step Captions */
-        .showcase-step-num {
-            color: #5b8c3e;
-            font-weight: 800;
-            font-size: 2rem;
-            line-height: 1;
-            margin-top: 1.5rem;
-            margin-bottom: 0.35rem;
-        }
-
-        .showcase-step-title {
-            color: #0b291a;
-            font-weight: 800;
-            font-size: 1.2rem;
-            letter-spacing: -0.3px;
-            text-transform: uppercase;
-            margin-bottom: 0.35rem;
-        }
-
-        .showcase-step-desc {
-            color: #475569;
-            font-size: 0.88rem;
-            line-height: 1.5;
-            max-width: 245px;
-            margin: 0 auto;
-        }
-
-        .showcase-footer-note {
-            color: #0b291a;
-            font-family: cursive;
-            font-size: 1.2rem;
-            font-weight: 600;
-            max-width: 580px;
-            margin: 0 auto;
-            line-height: 1.45;
-        }
-
-        /* Responsive Adjustments */
-        @media (max-width: 767px) {
-            .showcase-headline {
-                font-size: 2.25rem;
-            }
-            .phone-tilt-left,
-            .phone-center-elevated,
-            .phone-tilt-right {
-                transform: none;
-                max-width: 250px;
-            }
-        }
-        /* Row 6: Dark Business Rules Section */
-        .landing-row-rules {
-            background-color: #0b291a;
-            color: #ffffff;
-            padding: 5rem 2rem;
-        }
-        /* ====================================================
-        ROW 7: ORDERS MADE SIMPLE. PAYMENTS MADE DIRECT.
-        ==================================================== */
-        .landing-row-direct {
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            background-color: #ffffff;
-            color: #0b291a;
-            padding: 5.5rem 1rem;
-            border-top: 1px solid #eaeaea;
-            border-bottom: 1px solid #eaeaea;
-        }
-
-        .landing-row-direct .landing-content-inner {
-            max-width: 1080px;
-            margin: 0 auto;
-        }
-
-        .direct-kicker {
-            color: #5b6b63;
-            font-weight: 700;
-            font-size: 0.85rem;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-
-        .direct-headline {
-            font-weight: 800;
-            line-height: 1.08;
-            letter-spacing: -1.5px;
-            font-size: 3rem;
-            color: #0b291a;
-            text-transform: uppercase;
-        }
-
-        .direct-info-card {
-            background-color: #f3f4ee;
-            border: 1px solid #e2e8f0;
-            border-radius: 1.25rem;
-            padding: 2.5rem;
-            height: 100%;
-            text-align: left;
-        }
-
-        .direct-icon-circle {
-            width: 56px;
-            height: 56px;
-            background-color: #e2ebe3;
-            color: #198754;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .direct-info-card h3 {
-            font-weight: 800;
-            font-size: 1.4rem;
-            letter-spacing: -0.3px;
-            color: #0b291a;
-            text-transform: uppercase;
-            margin-bottom: 0.4rem;
-        }
-
-        .direct-card-subtitle {
-            color: #5b6b63;
-            font-style: italic;
-            font-size: 0.92rem;
-            margin-bottom: 1.15rem;
-        }
-
-        .direct-card-text {
-            color: #334155;
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 0;
-        }
-
-        .payment-method-pills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.65rem;
-            margin-top: 1.35rem;
-        }
-
-        .payment-pill-badge {
-            background-color: #ffffff;
-            color: #0b291a;
-            border: 1px solid #e2e8f0;
-            border-radius: 50rem;
-            padding: 0.45rem 1rem;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-        }
-
-        .payment-pill-badge i {
-            color: #198754;
-        }
-
-        .direct-disclaimer-box {
-            max-width: 720px;
-            margin: 2.5rem auto 0 auto;
-            background-color: #ffffff;
-            border: 1px solid #d1d5db;
-            border-radius: 0.75rem;
-            padding: 1rem 1.35rem;
-            display: flex;
-            align-items: center;
-            gap: 0.9rem;
-            text-align: left;
-            font-size: 0.9rem;
-            color: #334155;
-            line-height: 1.5;
-        }
-
-        .direct-disclaimer-box i {
-            color: #475569;
-            font-size: 1.15rem;
-            flex-shrink: 0;
-        }
-
-        @media (max-width: 767px) {
-            .direct-headline {
-                font-size: 2.2rem;
-            }
-            .direct-info-card {
-                padding: 1.85rem;
-            }
-        }
-        /* ====================================================
-        ROW 8: EXPLORE KEDAI DIRECTORY
-        ==================================================== */
-        .landing-row-explore {
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            background-color: #f3f4ee;
-            color: #0b291a;
-            padding: 5.5rem 1rem;
-        }
-
-        .landing-row-explore .landing-content-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .explore-tagline {
-            color: #5b8c3e;
-            font-family: cursive;
-            font-size: 1.15rem;
-            font-weight: 700;
-        }
-
-        .explore-headline {
-            font-weight: 800;
-            line-height: 1.05;
-            letter-spacing: -1.5px;
-            font-size: 3rem;
-            color: #0b291a;
-            text-transform: uppercase;
-        }
-
-        .explore-subtext {
-            color: #475569;
-            font-size: 1rem;
-            max-width: 580px;
-        }
-
-        /* Explore All Kedai Button */
-        .btn-explore-all {
-            background-color: #0b291a;
-            color: #ffffff !important;
-            border-radius: 50rem;
-            padding: 0.75rem 1.75rem;
-            font-weight: 700;
-            font-size: 0.9rem;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            box-shadow: 0 4px 12px rgba(11, 41, 26, 0.2);
-            transition: background-color 0.2s ease, transform 0.2s ease;
-        }
-
-        .btn-explore-all:hover {
-            background-color: #16422b;
-            transform: translateY(-2px);
-        }
-
-        /* Category Filter Chips */
-        .explore-filter-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.65rem;
-            justify-content: center;
-            margin-bottom: 3rem;
-        }
-
-        .filter-chip {
-            background-color: #ffffff;
-            color: #0b291a;
-            border: 1px solid #e2e8f0;
-            border-radius: 50rem;
-            padding: 0.55rem 1.25rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-decoration: none;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
-            transition: all 0.2s ease;
-        }
-
-        .filter-chip.active,
-        .filter-chip:hover {
-            background-color: #0b291a;
-            color: #ffffff;
-            border-color: #0b291a;
-        }
-
-        /* Vendor Directory Card */
-        .vendor-dir-card {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 1.25rem;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-            text-align: left;
-            transition: transform 0.2s ease;
-        }
-
-        .vendor-dir-card:hover {
-            transform: translateY(-4px);
-        }
-
-        .vendor-card-header-img {
-            position: relative;
-            height: 160px;
-            background-size: cover;
-            background-position: center;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .vendor-cat-badge {
-            background-color: rgba(11, 41, 26, 0.85);
-            color: #ffffff;
-            font-size: 0.65rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            padding: 0.3rem 0.65rem;
-            border-radius: 50rem;
-            text-transform: uppercase;
-            backdrop-filter: blur(4px);
-        }
-
-        .vendor-sample-badge {
-            background-color: #ffffff;
-            color: #0b291a;
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 0.3rem 0.65rem;
-            border-radius: 50rem;
-            text-transform: uppercase;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .vendor-avatar-row {
-            position: relative;
-            padding: 0 1.25rem;
-            margin-top: -32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .vendor-avatar-circle {
-            width: 64px;
-            height: 64px;
-            background-color: #0b291a;
-            border: 3px solid #ffffff;
-            border-radius: 50%;
-            color: #b2ff81;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.12);
-        }
-
-        .vendor-status-pill {
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 0.2rem 0.6rem;
-            border-radius: 50rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .status-open {
-            background-color: rgba(25, 135, 84, 0.1);
-            color: #198754;
-        }
-
-        .status-closed {
-            background-color: rgba(108, 117, 125, 0.1);
-            color: #6c757d;
-        }
-
-        .vendor-card-body {
-            padding: 1rem 1.25rem 1.25rem 1.25rem;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-
-        .vendor-store-title {
-            font-weight: 800;
-            font-size: 1.15rem;
-            color: #0b291a;
-            margin-bottom: 0.25rem;
-            letter-spacing: -0.3px;
-        }
-
-        .vendor-store-desc {
-            color: #475569;
-            font-size: 0.85rem;
-            line-height: 1.45;
-            margin-bottom: 1rem;
-            min-height: 2.5rem;
-        }
-
-        .vendor-meta-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 1.25rem 0;
-            font-size: 0.8rem;
-            color: #5b6b63;
-        }
-
-        .vendor-meta-list li {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.35rem;
-        }
-
-        .vendor-meta-list i {
-            width: 14px;
-            color: #198754;
-            text-align: center;
-        }
-
-        .btn-view-store {
-            background-color: #0b291a;
-            color: #ffffff !important;
-            font-weight: 700;
-            font-size: 0.85rem;
-            border-radius: 50rem;
-            padding: 0.6rem;
-            text-align: center;
-            text-decoration: none;
-            display: block;
-            margin-top: auto;
-            transition: background-color 0.2s ease;
-        }
-
-        .btn-view-store:hover {
-            background-color: #16422b;
-        }
-
-        @media (max-width: 992px) {
-            .explore-headline {
-                font-size: 2.3rem;
-            }
-        }
-        /* Row 9: Supported By Local Partners */
-        .landing-row-partners {
-            background-color: #f3f4ee;
-            padding: 5rem 2rem;
-        }
-        .sponsor-slot-card {
-            background-color: #ffffff;
-            border: 1.5px dashed #cbd5e1;
-            border-radius: 0.85rem;
-            padding: 1.5rem 1.25rem;
-            min-height: 110px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-        .slot-pill-label {
-            position: absolute;
-            top: 10px;
-            left: 12px;
-            background-color: #f3f4ee;
-            color: #64748b;
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 0.15rem 0.55rem;
-            border-radius: 50rem;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .sponsor-cta-banner {
-            background-color: #0b291a;
-            border-radius: 1rem;
-            padding: 1.5rem 2rem;
-        }
-        .btn-lime-pill {
-            background-color: #b2ff81;
-            color: #0b291a !important;
-            font-weight: 700;
-            font-size: 0.85rem;
-            border-radius: 50rem;
-            padding: 0.65rem 1.5rem;
-            border: none;
-            transition: transform 0.2s ease, background-color 0.2s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-        }
-        .btn-lime-pill:hover {
-            background-color: #9be667;
-            transform: translateY(-1px);
-        }
-
-        /* ====================================================
-        ROW 10: READY TO TAKE YOUR BUSINESS DIGITAL? (CTA)
-        ==================================================== */
-        .landing-row-cta-banner {
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            background-color: #0b291a;
-            color: #ffffff;
-            padding: 6rem 1rem;
-            text-align: center;
-            overflow: hidden;
-        }
-
-        .landing-row-cta-banner .landing-content-inner {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .cta-banner-tagline {
-            color: #b2ff81;
-            font-family: cursive;
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-
-        .cta-banner-headline {
-            font-weight: 800;
-            line-height: 1.05;
-            letter-spacing: -1.5px;
-            font-size: 3.2rem;
-            color: #ffffff;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-        }
-
-        .cta-banner-subtext {
-            color: rgba(255, 255, 255, 0.82);
-            font-size: 1.05rem;
-            margin-bottom: 2.5rem;
-        }
-
-        /* Action Buttons */
-        .btn-cta-orange {
-            background: linear-gradient(135deg, #ffa726, #fb8c00);
-            color: #ffffff !important;
-            border-radius: 50rem;
-            padding: 0.85rem 2.2rem;
-            font-weight: 700;
-            font-size: 0.95rem;
-            letter-spacing: 0.3px;
-            border: none;
-            box-shadow: 0 4px 15px rgba(251, 140, 0, 0.35);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .btn-cta-orange:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(251, 140, 0, 0.45);
-        }
-
-        .btn-cta-outline {
-            background: transparent;
-            color: #ffffff !important;
-            border: 1.5px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50rem;
-            padding: 0.85rem 2.2rem;
-            font-weight: 700;
-            font-size: 0.95rem;
-            letter-spacing: 0.3px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            transition: all 0.2s ease;
-        }
-
-        .cta-whatsapp-label {
-            color: #b2ff81;
-            font-weight: 700;
-            font-size: 0.85rem;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-        }
-
-        .whatsapp-contact-pills {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .wa-pill-item {
-            background-color: rgba(255, 255, 255, 0.05);
-            border: 1.5px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50rem;
-            padding: 0.65rem 1.5rem;
-            color: #ffffff;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .wa-pill-item i {
-            color: #b2ff81;
-            font-size: 1.1rem;
-        }
-
-        .wa-pill-item:hover {
-            background-color: rgba(255, 255, 255, 0.12);
-            border-color: #b2ff81;
-            color: #ffffff;
-        }
-
-        @media (max-width: 767px) {
-            .cta-banner-headline {
-                font-size: 2.3rem;
-            }
-        }
-        /* Row 11: Frequently Asked Questions */
-        .landing-row-faq {
-            background-color: #ffffff;
-            padding: 5rem 2rem;
-            border: 1px solid #eaeaea;
-        }
-        .faq-accordion .accordion-item {
-            background-color: #f3f4ee !important;
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 10rem !important;
-            margin-bottom: 1rem;
-            overflow: hidden;
-        }
-        .faq-accordion .accordion-button {
-            background-color: #f3f4ee !important;
-            color: #0b291a !important;
-            font-weight: 600;
-            font-size: 1rem;
-            border-radius: 10rem !important;
-            box-shadow: none !important;
-            padding: 1.2rem 1.75rem;
-        }
-        .faq-accordion .accordion-button:not(.collapsed) {
-            background-color: #ebf0e6 !important;
-            color: #0b291a !important;
-            border-bottom-left-radius: 0 !important;
-            border-bottom-right-radius: 0 !important;
-        }
-        .faq-accordion .accordion-body {
-            background-color: #f3f4ee;
-            color: #475569;
-            padding: 0.5rem 1.75rem 1.5rem 1.75rem;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-        .faq-accordion .accordion-collapse {
-            border-bottom-left-radius: 1rem;
-            border-bottom-right-radius: 1rem;
-        }
-    </style>
-
-    <!-- ==================================================== -->
-    <!-- ROW 1: HERO SECTION WITH 4-IMAGE BACKGROUND SLIDESHOW -->
-    <!-- ==================================================== -->
-    <section id="home" class="landing-full-row landing-hero-green-v2 shadow-sm">
-        
-        <!-- Background Slideshow Layer -->
-        <div class="hero-slideshow">
-            <div class="hero-slide"></div>
-            <div class="hero-slide"></div>
-            <div class="hero-slide"></div>
-            <div class="hero-slide"></div>
-        </div>
-
-        <!-- Foreground Content Layer -->
-        <div class="landing-content-inner container py-3">
-            <div class="row align-items-center g-5">
-                
-                <!-- Left Column: Copy & Actions -->
-                <div class="col-lg-7 text-center text-lg-start">
-                    <p class="hero-tagline fw-bold fst-italic mb-2">
-                        Bisnes Makin Mudah
-                    </p>
-                    <h1 class="hero-headline text-white mb-3">
-                        YOUR OWN DIGITAL STORE.<br>
-                        <span class="text-lime">ORDERS STRAIGHT TO WHATSAPP.</span>
-                    </h1>
-                    <p class="hero-subtext mb-4 mx-auto mx-lg-0">
-                        Food, fashion, fresh produce, handmade crafts and more. Turn your products into a simple digital ordering experience. Let customers browse, choose, order and send their orders directly to your WhatsApp.
-                    </p>
-                    
-                    <!-- Action Buttons Row -->
-                    <div class="d-flex justify-content-center justify-content-lg-start align-items-center gap-3 flex-wrap mb-3">
-                        <a href="https://api.whatsapp.com/send/?phone=601169893389&text=Hi+Kedai+WA+Kamek%2C+I%27d+like+to+get+my+digital+store+set+up.&type=phone_number&app_absent=0" target="_blank" class="btn btn-orange-pill">
-                            GET YOUR STORE SET UP
-                        </a>
-                        <a href="#how-it-works" class="btn btn-outline-custom">
-                            SEE HOW IT WORKS
-                        </a>
-                    </div>
-                    
-                    <!-- Explore Kedai Lime Pill Button -->
-                    <div class="text-center text-lg-start mt-3">
-                        <a href="#explore" class="btn btn-lime-pill-solid">
-                            EXPLORE KEDAI <i class="fa-solid fa-arrow-right ms-2 fs-6"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Right Column: Phone Mockup Visual -->
-                <div class="col-lg-5 text-center">
-                    <div class="phone-mockup-container">
-                        <div class="p-3 bg-black bg-opacity-40 rounded-5 border border-secondary border-opacity-50 shadow-lg text-center">
-                            <i class="fa-solid fa-mobile-screen display-1 mb-3" style="color: #b2ff81;"></i>
-                            <h6 class="text-white fw-bold mb-1">Live Storefront Preview</h6>
-                            <p class="text-white-50 small mb-0">Seamless WhatsApp Cart Integration</p>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- ROW 2: ONE PLATFORM. EVERY KIND OF KEDAI. -->
-    <!-- ==================================================== -->
-    <section id="categories" class="landing-row-platform shadow-sm">
-        <div class="landing-content-inner container py-2">
-            
-            <!-- Section Header -->
-            <div class="text-center mb-5">
-                <p class="platform-tagline fst-italic mb-1">
-                    From kuih to kain, sayur to sulaman.
-                </p>
-                <h2 class="platform-headline mb-0">
-                    ONE PLATFORM.<br>EVERY KIND OF KEDAI.
-                </h2>
-            </div>
-
-            <!-- Top Row: 2 Large Cards (Food & Fashion) -->
-            <div class="row g-4 mb-4">
-                
-                <!-- Card 1: Food & Beverages -->
-                <div class="col-lg-6">
-                    <div class="category-feature-card cat-card-food">
-                        <div class="category-icon-badge">
-                            <i class="fa-solid fa-utensils"></i>
-                        </div>
-                        <div>
-                            <h3>FOOD & BEVERAGES</h3>
-                            <p>Hawkers, kuih sellers, home bakers, cafés, restaurants and catering.</p>
-                            <div class="card-action-btns">
-                                <a href="#sample-food" class="btn-sample-action">SEE SAMPLE STORE <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.7rem;"></i></a>
-                                <a href="#sample-food" class="btn-sample-outline">SAMPLE STORE</a>
+                    <!-- Card 2: Fashion & Apparel -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card position-relative overflow-hidden border-0 rounded-4 shadow-sm h-100" style="min-height: 310px; background-color: #163325;">
+                            <img
+                                src="https://placehold.co/800x500/b7c2ba/163325?text=Fashion+%26+Apparel+Photo"
+                                alt="Fashion and Apparel Placeholder"
+                                class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+                            >
+                            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(180deg, rgba(22, 51, 37, 0.12) 0%, rgba(16, 40, 29, 0.78) 68%, rgba(12, 31, 22, 0.94) 100%);"></div>
+
+                            <div class="card-body position-relative d-flex flex-column justify-content-between p-4 p-sm-5 text-white">
+                                <div>
+                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; background-color: #9df557; color: #132c1e;">
+                                        <i class="bi bi-tag-fill fs-5"></i>
+                                    </span>
+                                </div>
+
+                                <div class="pt-5 mt-4">
+                                    <h3 class="h4 fw-bold text-uppercase mb-2">FASHION &amp; APPAREL</h3>
+                                    <p class="small mb-4" style="color: rgba(255, 255, 255, 0.85);">
+                                        Baju kurung, batik, tudung, modest wear, streetwear and accessories. Sizes, colours and requests go in order notes.
+                                    </p>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="#section-10"
+                                        class="btn rounded-pill px-3 py-2 fw-bold text-uppercase border-0 d-inline-flex align-items-center gap-1"
+                                        style="background-color: #9df557; color: #132c1e; font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            <span>SEE SAMPLE STORE</span>
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                        <a href="#section-6"
+                                        class="btn rounded-pill px-3 py-2 fw-semibold text-uppercase text-white"
+                                        style="background-color: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.35); font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            SAMPLE STORE
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
-                <!-- Card 2: Fashion & Apparel -->
-                <div class="col-lg-6">
-                    <div class="category-feature-card cat-card-fashion">
-                        <div class="category-icon-badge">
-                            <i class="fa-solid fa-shirt"></i>
-                        </div>
-                        <div>
-                            <h3>FASHION & APPAREL</h3>
-                            <p>Baju kurung, batik, tudung, modest wear, streetwear and accessories. Sizes, colours and requests go in order notes.</p>
-                            <div class="card-action-btns">
-                                <a href="#sample-fashion" class="btn-sample-action">SEE SAMPLE STORE <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.7rem;"></i></a>
-                                <a href="#sample-fashion" class="btn-sample-outline">SAMPLE STORE</a>
+                <!-- Bottom Row: 3 Category Cards -->
+                <div class="row g-4">
+
+                    <!-- Card 3: Fresh Produce -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="card position-relative overflow-hidden border-0 rounded-4 shadow-sm h-100" style="min-height: 320px; background-color: #163325;">
+                            <img
+                                src="https://placehold.co/600x520/b7c2ba/163325?text=Fresh+Produce+Photo"
+                                alt="Fresh Produce Placeholder"
+                                class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+                            >
+                            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(180deg, rgba(22, 51, 37, 0.12) 0%, rgba(16, 40, 29, 0.78) 65%, rgba(12, 31, 22, 0.94) 100%);"></div>
+
+                            <div class="card-body position-relative d-flex flex-column justify-content-between p-4 text-white">
+                                <div>
+                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; background-color: #9df557; color: #132c1e;">
+                                        <i class="bi bi-basket2-fill fs-5"></i>
+                                    </span>
+                                </div>
+
+                                <div class="pt-5 mt-3">
+                                    <h3 class="h5 fw-bold text-uppercase mb-2">FRESH PRODUCE</h3>
+                                    <p class="small mb-3" style="color: rgba(255, 255, 255, 0.85);">
+                                        Vegetables, fruits, seafood, eggs, local farm and pasar goods.
+                                    </p>
+                                    <div class="d-flex flex-column align-items-start gap-2">
+                                        <a href="#section-10"
+                                        class="btn rounded-pill px-3 py-2 fw-bold text-uppercase border-0 d-inline-flex align-items-center gap-1"
+                                        style="background-color: #9df557; color: #132c1e; font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            <span>SEE SAMPLE STORE</span>
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                        <a href="#section-6"
+                                        class="btn rounded-pill px-3 py-2 fw-semibold text-uppercase text-white"
+                                        style="background-color: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.35); font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            SAMPLE STORE
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-            </div>
+                    <!-- Card 4: Handmade Crafts -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="card position-relative overflow-hidden border-0 rounded-4 shadow-sm h-100" style="min-height: 320px; background-color: #163325;">
+                            <img
+                                src="https://placehold.co/600x520/b7c2ba/163325?text=Handmade+Crafts+Photo"
+                                alt="Handmade Crafts Placeholder"
+                                class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+                            >
+                            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(180deg, rgba(22, 51, 37, 0.12) 0%, rgba(16, 40, 29, 0.78) 65%, rgba(12, 31, 22, 0.94) 100%);"></div>
 
-            <!-- Bottom Row: 3 Cards (Fresh Produce, Handmade Crafts, More Businesses) -->
-            <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
-                
-                <!-- Card 3: Fresh Produce -->
-                <div class="col">
-                    <div class="category-feature-card cat-card-fresh">
-                        <div class="category-icon-badge">
-                            <i class="fa-solid fa-carrot"></i>
-                        </div>
-                        <div>
-                            <h3>FRESH PRODUCE</h3>
-                            <p>Vegetables, fruits, seafood, eggs, local farm and pasar goods.</p>
-                            <div class="card-action-btns">
-                                <a href="#sample-fresh" class="btn-sample-action">SEE SAMPLE STORE <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.7rem;"></i></a>
-                                <a href="#sample-fresh" class="btn-sample-outline">SAMPLE STORE</a>
+                            <div class="card-body position-relative d-flex flex-column justify-content-between p-4 text-white">
+                                <div>
+                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; background-color: #9df557; color: #132c1e;">
+                                        <i class="bi bi-gem fs-5"></i>
+                                    </span>
+                                </div>
+
+                                <div class="pt-5 mt-3">
+                                    <h3 class="h5 fw-bold text-uppercase mb-2">HANDMADE CRAFTS</h3>
+                                    <p class="small mb-3" style="color: rgba(255, 255, 255, 0.85);">
+                                        Weaving, beadwork, songket, batik, candles, soap, ceramics and personalised gifts.
+                                    </p>
+                                    <div class="d-flex flex-column align-items-start gap-2">
+                                        <a href="#section-10"
+                                        class="btn rounded-pill px-3 py-2 fw-bold text-uppercase border-0 d-inline-flex align-items-center gap-1"
+                                        style="background-color: #9df557; color: #132c1e; font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            <span>SEE SAMPLE STORE</span>
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                        <a href="#section-6"
+                                        class="btn rounded-pill px-3 py-2 fw-semibold text-uppercase text-white"
+                                        style="background-color: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.35); font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            SAMPLE STORE
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Card 4: Handmade Crafts -->
-                <div class="col">
-                    <div class="category-feature-card cat-card-crafts">
-                        <div class="category-icon-badge">
-                            <i class="fa-solid fa-gem"></i>
-                        </div>
-                        <div>
-                            <h3>HANDMADE CRAFTS</h3>
-                            <p>Weaving, beadwork, songket, batik, candles, soap, ceramics and personalised gifts.</p>
-                            <div class="card-action-btns">
-                                <a href="#sample-crafts" class="btn-sample-action">SEE SAMPLE STORE <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.7rem;"></i></a>
-                                <a href="#sample-crafts" class="btn-sample-outline">SAMPLE STORE</a>
+                    <!-- Card 5: More Businesses -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="card position-relative overflow-hidden border-0 rounded-4 shadow-sm h-100" style="min-height: 320px; background-color: #163325;">
+                            <img
+                                src="https://placehold.co/600x520/b7c2ba/163325?text=More+Businesses+Photo"
+                                alt="More Businesses Placeholder"
+                                class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover"
+                            >
+                            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(180deg, rgba(22, 51, 37, 0.12) 0%, rgba(16, 40, 29, 0.78) 65%, rgba(12, 31, 22, 0.94) 100%);"></div>
+
+                            <div class="card-body position-relative d-flex flex-column justify-content-between p-4 text-white">
+                                <div>
+                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; background-color: #9df557; color: #132c1e;">
+                                        <i class="bi bi-shop fs-5"></i>
+                                    </span>
+                                </div>
+
+                                <div class="pt-5 mt-3">
+                                    <h3 class="h5 fw-bold text-uppercase mb-2">MORE BUSINESSES</h3>
+                                    <p class="small mb-3" style="color: rgba(255, 255, 255, 0.85);">
+                                        Beauty and wellness, home goods, gifts and hampers, plants, pre-loved items and other small sellers.
+                                    </p>
+                                    <div class="d-flex flex-column align-items-start gap-2">
+                                        <a href="#section-10"
+                                        class="btn rounded-pill px-3 py-2 fw-bold text-uppercase border-0 d-inline-flex align-items-center gap-1"
+                                        style="background-color: #9df557; color: #132c1e; font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            <span>SEE SAMPLE STORE</span>
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                        <a href="#section-6"
+                                        class="btn rounded-pill px-3 py-2 fw-semibold text-uppercase text-white"
+                                        style="background-color: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.35); font-size: 0.7rem; letter-spacing: 0.04em;">
+                                            SAMPLE STORE
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
-                <!-- Card 5: More Businesses -->
-                <div class="col">
-                    <div class="category-feature-card cat-card-more">
-                        <div class="category-icon-badge">
-                            <i class="fa-solid fa-store"></i>
-                        </div>
-                        <div>
-                            <h3>MORE BUSINESSES</h3>
-                            <p>Beauty and wellness, home goods, gifts and hampers, plants, pre-loved items and other small sellers.</p>
-                            <div class="card-action-btns">
-                                <a href="#sample-more" class="btn-sample-action">SEE SAMPLE STORE <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.7rem;"></i></a>
-                                <a href="#sample-more" class="btn-sample-outline">SAMPLE STORE</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Bottom Tagline Footer -->
-            <div class="text-center">
-                <p class="fst-italic text-dark mb-0" style="font-size: 1.2rem; font-weight: 500;">
+                <!-- Bottom Tagline -->
+                <p class="fst-italic text-center small mt-4 mb-0" style="color: #4c5d54;">
                     If you sell it, you can list it.
                 </p>
-            </div>
 
-        </div>
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- ROW 3: FEATURE HIGHLIGHTS -->
-    <!-- ==================================================== -->
-    <section id="features" class="landing-full-row landing-row-white shadow-sm text-center">
-        <div class="landing-content-inner container py-3">
-            <small class="text-muted text-uppercase fw-bold tracking-wider" style="letter-spacing: 1px;">Made for our Malaysian business</small>
-            <h3 class="fw-bold text-dark display-6 mb-5">LESS CHAT. MORE ORDERS.</h3>
-            
-            <div class="row row-cols-1 row-cols-md-4 g-4">
-                <div class="col">
-                    <div class="p-4 bg-light rounded-4 border h-100">
-                        <i class="fa-solid fa-bolt text-success fs-3 mb-2"></i>
-                        <h6 class="fw-bold text-dark">ONE TIME SETUP</h6>
-                        <p class="text-muted small mb-0">Quick configuration to get your menu live instantly.</p>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="p-4 bg-light rounded-4 border h-100">
-                        <i class="fa-solid fa-qrcode text-success fs-3 mb-2"></i>
-                        <h6 class="fw-bold text-dark">INSTANT SCAN QR</h6>
-                        <p class="text-muted small mb-0">Tabletop QR codes for fast customer scanning.</p>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="p-4 bg-light rounded-4 border h-100">
-                        <i class="fa-solid fa-comments text-success fs-3 mb-2"></i>
-                        <h6 class="fw-bold text-dark">NO CUSTOMER LOG-IN</h6>
-                        <p class="text-muted small mb-0">Zero friction ordering straight to WhatsApp.</p>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="p-4 bg-light rounded-4 border h-100">
-                        <i class="fa-solid fa-shield-halved text-success fs-3 mb-2"></i>
-                        <h6 class="fw-bold text-dark">SIMPLE CUSTODIAN</h6>
-                        <p class="text-muted small mb-0">Maintain total control of your business revenues.</p>
-                    </div>
-                </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ==================================================== -->
-    <!-- ROW 4: HOW DOES IT WORK -->
-    <!-- ==================================================== -->
-    <section id="how-it-works" class="landing-full-row landing-row-how-it-works shadow-sm">
-        <div class="landing-content-inner container py-3">
-            <div class="text-center mb-5">
-                <small class="text-muted text-uppercase fw-bold" style="letter-spacing: 1px;">Simple Steps. Easy Ordering.</small>
-                <h2 class="fw-bold display-5 text-dark" style="letter-spacing: -1px;">HOW DOES IT WORK?</h2>
-            </div>
-            <div class="row align-items-center g-5">
-                <div class="col-lg-6">
-                    <div class="d-flex align-items-start mb-4">
-                        <div class="step-icon-circle me-3"><i class="fa-solid fa-store"></i></div>
-                        <div>
-                            <small class="text-success fw-bold text-uppercase">Step 01</small>
-                            <h5 class="fw-bold text-dark mb-1">YOUR DIGITAL STORE</h5>
-                            <p class="text-muted small mb-0">We set up your personalised digital store with your business details, operating hours, product photos and product list.</p>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-start mb-4">
-                        <div class="step-icon-circle me-3"><i class="fa-solid fa-basket-shopping"></i></div>
-                        <div>
-                            <small class="text-success fw-bold text-uppercase">Step 02</small>
-                            <h5 class="fw-bold text-dark mb-1">CUSTOMERS BROWSE</h5>
-                            <p class="text-muted small mb-0">Customers open your digital store through a link or QR code. No downloads or sign-ins required.</p>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-start mb-4">
-                        <div class="step-icon-circle me-3"><i class="fa-solid fa-list-check"></i></div>
-                        <div>
-                            <small class="text-success fw-bold text-uppercase">Step 03</small>
-                            <h5 class="fw-bold text-dark mb-1">CUSTOMERS PLACE ORDERS</h5>
-                            <p class="text-muted small mb-0">They select their favourite items, choose quantities, add special notes and enter their name for order identification.</p>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-start">
-                        <div class="step-icon-circle me-3"><i class="fa-brands fa-whatsapp"></i></div>
-                        <div>
-                            <small class="text-success fw-bold text-uppercase">Step 04</small>
-                            <h5 class="fw-bold text-dark mb-1">ORDER SENT TO WHATSAPP</h5>
-                            <p class="text-muted small mb-0">The complete order summary goes directly to your WhatsApp. You can confirm the order and arrange payment with your customer.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6 text-center">
-                    <div class="p-3 bg-light rounded-4 border shadow-sm d-inline-block">
-                        <i class="fa-solid fa-mobile-screen display-2 text-success mb-2"></i>
-                        <h6 class="fw-bold text-dark mb-0">Interactive Mobile Checkout Flow</h6>
-                        <small class="text-muted">Real-time WhatsApp payload generator</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+        <!-- Section 03: Made For Our Malaysian Business -->
+        <section id="section-3" class="container-fluid py-5 border-top border-bottom" style="background-color: #fbfcfa; color: #13261d;">
+            <div class="container py-3 py-lg-4">
 
-    <!-- ==================================================== -->
-    <!-- ROW 5: YOUR STORE. YOUR PRODUCTS. YOUR WAY. -->
-    <!-- ==================================================== -->
-    <section class="landing-row-showcase shadow-sm text-center">
-        <div class="landing-content-inner container py-2">
-            
-            <!-- Section Header -->
-            <div class="mb-5">
-                <p class="showcase-tagline fst-italic mb-1">
-                    See it in action
-                </p>
-                <h2 class="showcase-headline mb-0">
-                    YOUR STORE. YOUR<br>PRODUCTS. YOUR WAY.
-                </h2>
-            </div>
-
-            <!-- 3-Phone Showcase & Steps -->
-            <div class="row row-cols-1 row-cols-md-3 g-4 align-items-end justify-content-center mb-5 pt-2">
-                
-                <!-- Step 01: Browse the Store -->
-                <div class="col showcase-phone-col">
-                    <div class="showcase-phone-container phone-tilt-left">
-                        <div class="bg-white p-4 rounded-4 shadow-sm border border-secondary border-opacity-25 text-center">
-                            <i class="fa-solid fa-mobile-screen display-3 text-success mb-2" style="color: #1e392a !important;"></i>
-                            <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;">Browse the Store Screen</h6>
-                            <p class="text-muted small mb-0" style="font-size: 0.75rem;">Interactive catalog & pricing</p>
-                        </div>
-                    </div>
-                    <div class="showcase-step-num">01</div>
-                    <h4 class="showcase-step-title">BROWSE THE STORE</h4>
-                    <p class="showcase-step-desc">
-                        Beautiful product photography, descriptions and prices.
+                <!-- Section Header -->
+                <div class="text-center mb-5">
+                    <p class="small fw-semibold text-uppercase mb-2" style="color: #4f6659; letter-spacing: 0.14em;">
+                        MADE FOR OUR MALAYSIAN BUSINESS
                     </p>
+                    <h2 class="display-6 fw-bold text-uppercase lh-1 mb-0" style="color: #0f2018;">
+                        LESS CHAT. MORE ORDERS.
+                    </h2>
                 </div>
 
-                <!-- Step 02: Customise Your Order -->
-                <div class="col showcase-phone-col">
-                    <div class="showcase-phone-container phone-center-elevated">
-                        <div class="bg-white p-4 rounded-4 shadow-sm border border-secondary border-opacity-25 text-center">
-                            <i class="fa-solid fa-mobile-screen display-3 text-success mb-2" style="color: #1e392a !important;"></i>
-                            <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;">Customise Your Order Screen</h6>
-                            <p class="text-muted small mb-0" style="font-size: 0.75rem;">Quantities, notes & review list</p>
-                        </div>
-                    </div>
-                    <div class="showcase-step-num">02</div>
-                    <h4 class="showcase-step-title">CUSTOMISE YOUR ORDER</h4>
-                    <p class="showcase-step-desc">
-                        Select quantities, add notes and review the order list.
-                    </p>
-                </div>
+                <!-- 4-Card Feature Grid -->
+                <div class="row g-4">
 
-                <!-- Step 03: Send to WhatsApp -->
-                <div class="col showcase-phone-col">
-                    <div class="showcase-phone-container phone-tilt-right">
-                        <div class="bg-white p-4 rounded-4 shadow-sm border border-secondary border-opacity-25 text-center">
-                            <i class="fa-solid fa-mobile-screen display-3 text-success mb-2" style="color: #1e392a !important;"></i>
-                            <h6 class="fw-bold text-dark mb-1" style="font-size: 0.9rem;">Send to WhatsApp Screen</h6>
-                            <p class="text-muted small mb-0" style="font-size: 0.75rem;">Clean summary & total payload</p>
+                    <!-- Card 1: One Time Setup -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="card h-100 text-center rounded-4 border" style="background-color: #f8f9f8; border-color: #e4e8e5 !important;">
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                                <i class="bi bi-lightning-charge-fill fs-3 mb-3" style="color: #189a5a;"></i>
+                                <h3 class="h6 fw-bold text-uppercase mb-2" style="color: #12241b; letter-spacing: 0.03em;">
+                                    ONE TIME SETUP
+                                </h3>
+                                <p class="small mb-0" style="color: #56685e;">
+                                    Quick configuration to get your menu live instantly.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <div class="showcase-step-num">03</div>
-                    <h4 class="showcase-step-title">SEND TO WHATSAPP</h4>
-                    <p class="showcase-step-desc">
-                        A clean summary with name, items, notes and total.
-                    </p>
+
+                    <!-- Card 2: Instant Scan QR -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="card h-100 text-center rounded-4 border" style="background-color: #f8f9f8; border-color: #e4e8e5 !important;">
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                                <i class="bi bi-qr-code fs-3 mb-3" style="color: #189a5a;"></i>
+                                <h3 class="h6 fw-bold text-uppercase mb-2" style="color: #12241b; letter-spacing: 0.03em;">
+                                    INSTANT SCAN QR
+                                </h3>
+                                <p class="small mb-0" style="color: #56685e;">
+                                    Tabletop QR codes for fast customer scanning.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: No Customer Log-In -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="card h-100 text-center rounded-4 border" style="background-color: #f8f9f8; border-color: #e4e8e5 !important;">
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                                <i class="bi bi-chat-dots-fill fs-3 mb-3" style="color: #189a5a;"></i>
+                                <h3 class="h6 fw-bold text-uppercase mb-2" style="color: #12241b; letter-spacing: 0.03em;">
+                                    NO CUSTOMER LOG-IN
+                                </h3>
+                                <p class="small mb-0" style="color: #56685e;">
+                                    Zero friction ordering straight to WhatsApp.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Simple Custodian -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="card h-100 text-center rounded-4 border" style="background-color: #f8f9f8; border-color: #e4e8e5 !important;">
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                                <i class="bi bi-shield-fill-check fs-3 mb-3" style="color: #189a5a;"></i>
+                                <h3 class="h6 fw-bold text-uppercase mb-2" style="color: #12241b; letter-spacing: 0.03em;">
+                                    SIMPLE CUSTODIAN
+                                </h3>
+                                <p class="small mb-0" style="color: #56685e;">
+                                    Maintain total control of your business revenues.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
             </div>
+        </section>
 
-            <!-- Bottom Handwritten Note -->
-            <div class="pt-2">
-                <p class="showcase-footer-note fst-italic mb-0">
+        <!-- Section 04: How Does It Work? -->
+        <section id="section-4" class="container-fluid py-5 border-top border-bottom" style="background-color: #ffffff; color: #13261d;">
+            <div class="container py-3 py-lg-4">
+
+                <!-- Section Header -->
+                <div class="text-center mb-5">
+                    <p class="small fw-semibold text-uppercase mb-2" style="color: #4f6659; letter-spacing: 0.14em;">
+                        SIMPLE STEPS. EASY ORDERING.
+                    </p>
+                    <h2 class="display-6 fw-bold text-uppercase lh-1 mb-0" style="color: #0f2018;">
+                        HOW DOES IT WORK?
+                    </h2>
+                </div>
+
+                <!-- Two-Column Layout: 4 Steps on Left, Checkout Flow Card on Right -->
+                <div class="row align-items-center g-5">
+
+                    <!-- Left Column: Steps 01 - 04 -->
+                    <div class="col-12 col-lg-7">
+                        <div class="d-flex flex-column gap-4">
+
+                            <!-- Step 01 -->
+                            <div class="d-flex align-items-start gap-3">
+                                <i class="bi bi-shop fs-5 mt-1 flex-shrink-0" style="color: #152b20;"></i>
+                                <div>
+                                    <div class="small fw-bold text-uppercase mb-1" style="color: #198754; letter-spacing: 0.05em;">
+                                        STEP 01
+                                    </div>
+                                    <h3 class="h6 fw-bold text-uppercase mb-1" style="color: #0f2018;">
+                                        YOUR DIGITAL STORE
+                                    </h3>
+                                    <p class="small mb-0" style="color: #56685e; max-width: 520px;">
+                                        We set up your personalised digital store with your business details, operating hours, product photos and product list.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Step 02 -->
+                            <div class="d-flex align-items-start gap-3">
+                                <i class="bi bi-basket2-fill fs-5 mt-1 flex-shrink-0" style="color: #152b20;"></i>
+                                <div>
+                                    <div class="small fw-bold text-uppercase mb-1" style="color: #198754; letter-spacing: 0.05em;">
+                                        STEP 02
+                                    </div>
+                                    <h3 class="h6 fw-bold text-uppercase mb-1" style="color: #0f2018;">
+                                        CUSTOMERS BROWSE
+                                    </h3>
+                                    <p class="small mb-0" style="color: #56685e; max-width: 520px;">
+                                        Customers open your digital store through a link or QR code. No downloads or sign-ins required.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Step 03 -->
+                            <div class="d-flex align-items-start gap-3">
+                                <i class="bi bi-list-check fs-5 mt-1 flex-shrink-0" style="color: #152b20;"></i>
+                                <div>
+                                    <div class="small fw-bold text-uppercase mb-1" style="color: #198754; letter-spacing: 0.05em;">
+                                        STEP 03
+                                    </div>
+                                    <h3 class="h6 fw-bold text-uppercase mb-1" style="color: #0f2018;">
+                                        CUSTOMERS PLACE ORDERS
+                                    </h3>
+                                    <p class="small mb-0" style="color: #56685e; max-width: 520px;">
+                                        They select their favourite items, choose quantities, add special notes and enter their name for order identification.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Step 04 -->
+                            <div class="d-flex align-items-start gap-3">
+                                <i class="bi bi-whatsapp fs-5 mt-1 flex-shrink-0" style="color: #152b20;"></i>
+                                <div>
+                                    <div class="small fw-bold text-uppercase mb-1" style="color: #198754; letter-spacing: 0.05em;">
+                                        STEP 04
+                                    </div>
+                                    <h3 class="h6 fw-bold text-uppercase mb-1" style="color: #0f2018;">
+                                        ORDER SENT TO WHATSAPP
+                                    </h3>
+                                    <p class="small mb-0" style="color: #56685e; max-width: 520px;">
+                                        The complete order summary goes directly to your WhatsApp. You can confirm the order and arrange payment with your customer.
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Interactive Mobile Checkout Flow Card -->
+                    <div class="col-12 col-lg-5 d-flex justify-content-center">
+                        <div class="card w-100 text-center rounded-4 border shadow-sm p-4" style="max-width: 340px; background-color: #f6f7f6; border-color: #e3e7e4 !important;">
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center p-2">
+                                <img
+                                    src="https://placehold.co/120x120/f6f7f6/189a5a?text=Mobile+UI"
+                                    alt="Interactive Mobile Checkout Flow Placeholder"
+                                    class="img-fluid rounded-3 mb-3 object-fit-contain"
+                                    style="width: 72px; height: 72px;"
+                                >
+                                <h3 class="h6 fw-bold mb-1" style="color: #0f2018;">
+                                    Interactive Mobile Checkout Flow
+                                </h3>
+                                <p class="small mb-0" style="color: #6b7c73;">
+                                    Real-time WhatsApp payload generator
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Section 05: See It In Action -->
+        <section id="section-5" class="container-fluid py-5 border-top border-bottom" style="background-color: #f4f5ef; color: #13261d;">
+            <div class="container py-3 py-lg-4">
+
+                <!-- Section Header -->
+                <div class="text-center mb-5">
+                    <p class="fst-italic fw-medium mb-1" style="color: #4f7d2f;">See it in action</p>
+                    <h2 class="display-6 fw-bold text-uppercase lh-1 mb-0" style="color: #0e1f17;">
+                        YOUR STORE. YOUR<br>
+                        PRODUCTS. YOUR WAY.
+                    </h2>
+                </div>
+
+                <!-- 3-Column Showcase Grid -->
+                <div class="row g-4 align-items-end text-center">
+
+                    <!-- Step 01: Browse the Store -->
+                    <div class="col-12 col-md-4">
+                        <div class="card border-0 rounded-4 shadow-sm p-3 p-sm-4 mx-auto bg-white" style="max-width: 300px; transform: rotate(-2deg);">
+                            <div class="card-body p-2">
+                                <img
+                                    src="https://placehold.co/120x120/ffffff/15803d?text=Store+UI"
+                                    alt="Browse the Store Screen Placeholder"
+                                    class="img-fluid rounded-3 mb-2 object-fit-contain"
+                                    style="width: 56px; height: 56px;"
+                                >
+                                <div class="fw-bold small mb-1" style="color: #0f2018;">Browse the Store Screen</div>
+                                <div class="small" style="color: #6b7c73; font-size: 0.78rem;">Interactive catalog &amp; pricing</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-1">
+                            <div class="fs-5 fw-bold mb-1" style="color: #169a5a;">01</div>
+                            <h3 class="h6 fw-bold text-uppercase mb-2" style="color: #0f2018;">BROWSE THE STORE</h3>
+                            <p class="small mx-auto mb-0" style="color: #56685e; max-width: 260px;">
+                                Beautiful product photography, descriptions and prices.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 02: Customise Your Order -->
+                    <div class="col-12 col-md-4">
+                        <div class="card border-0 rounded-4 shadow-sm p-3 p-sm-4 mx-auto bg-white" style="max-width: 300px;">
+                            <div class="card-body p-2">
+                                <img
+                                    src="https://placehold.co/120x120/ffffff/15803d?text=Order+UI"
+                                    alt="Customise Your Order Screen Placeholder"
+                                    class="img-fluid rounded-3 mb-2 object-fit-contain"
+                                    style="width: 56px; height: 56px;"
+                                >
+                                <div class="fw-bold small mb-1" style="color: #0f2018;">Customise Your Order Screen</div>
+                                <div class="small" style="color: #6b7c73; font-size: 0.78rem;">Quantities, notes &amp; review list</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-1">
+                            <div class="fs-5 fw-bold mb-1" style="color: #169a5a;">02</div>
+                            <h3 class="h6 fw-bold text-uppercase mb-2" style="color: #0f2018;">CUSTOMISE YOUR ORDER</h3>
+                            <p class="small mx-auto mb-0" style="color: #56685e; max-width: 260px;">
+                                Select quantities, add notes and review the order list.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 03: Send to WhatsApp -->
+                    <div class="col-12 col-md-4">
+                        <div class="card border-0 rounded-4 shadow-sm p-3 p-sm-4 mx-auto bg-white" style="max-width: 300px; transform: rotate(2deg);">
+                            <div class="card-body p-2">
+                                <img
+                                    src="https://placehold.co/120x120/ffffff/15803d?text=WA+UI"
+                                    alt="Send to WhatsApp Screen Placeholder"
+                                    class="img-fluid rounded-3 mb-2 object-fit-contain"
+                                    style="width: 56px; height: 56px;"
+                                >
+                                <div class="fw-bold small mb-1" style="color: #0f2018;">Send to WhatsApp Screen</div>
+                                <div class="small" style="color: #6b7c73; font-size: 0.78rem;">Clean summary &amp; total payload</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-1">
+                            <div class="fs-5 fw-bold mb-1" style="color: #169a5a;">03</div>
+                            <h3 class="h6 fw-bold text-uppercase mb-2" style="color: #0f2018;">SEND TO WHATSAPP</h3>
+                            <p class="small mx-auto mb-0" style="color: #56685e; max-width: 260px;">
+                                A clean summary with name, items, notes and total.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Bottom Italic Note -->
+                <p class="fst-italic text-center small mt-5 mb-0" style="color: #4c5d54;">
                     Your customers don’t need to download anything or create an account. Just open the link and order.
                 </p>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- ROW 6: YOUR BUSINESS. YOUR SALES. YOUR RULES. -->
-    <!-- ==================================================== -->
-    <section class="landing-full-row landing-row-rules shadow-sm text-center">
-        <div class="landing-content-inner container py-3">
-            <small class="text-uppercase fw-bold" style="color: #b2ff81; letter-spacing: 1px;">Keep things simple</small>
-            <h2 class="fw-bold display-5 text-white mb-5" style="letter-spacing: -1px;">YOUR BUSINESS. YOUR SALES. YOUR RULES.</h2>
-            
-            <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
-                <div class="col">
-                    <div class="rule-card text-start">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-percent text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
-                            <h6 class="fw-bold text-white mb-0">100% OF YOUR SALES</h6>
-                        </div>
-                        <p class="text-white-50 small mb-0">We don't charge commission on your orders. Your sales belong to you.</p>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="rule-card text-start">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-screwdriver-wrench text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
-                            <h6 class="fw-bold text-white mb-0">ONE-TIME SETUP FEE</h6>
-                        </div>
-                        <p class="text-white-50 small mb-0">Pay a once-off setup fee for much store. No per-order commission.</p>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="rule-card text-start">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-user-xmark text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
-                            <h6 class="fw-bold text-white mb-0">NO CUSTOMER REGISTRATION</h6>
-                        </div>
-                        <p class="text-white-50 small mb-0">Customers can browse and order without creating accounts.</p>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="rule-card text-start">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-bolt text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
-                            <h6 class="fw-bold text-white mb-0">EASY TO USE</h6>
-                        </div>
-                        <p class="text-white-50 small mb-0">A straightforward store designed for everyday customers and business owners.</p>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="rule-card text-start">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-globe text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
-                            <h6 class="fw-bold text-white mb-0">NO APP DOWNLOAD</h6>
-                        </div>
-                        <p class="text-white-50 small mb-0">Works through a web browser. Just share your store link or QR code.</p>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="rule-card text-start">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="fa-solid fa-shield text-success fs-4 me-2" style="color: #b2ff81 !important;"></i>
-                            <h6 class="fw-bold text-white mb-0">CANCEL ANYTIME</h6>
-                        </div>
-                        <p class="text-white-50 small mb-0">Enjoy flexibility without complicated commitments.</p>
-                    </div>
-                </div>
-            </div>
-            
-            <p class="text-white-50 small fst-italic mb-0 pt-3 border-top border-secondary border-opacity-25">
-                Kedai WA Kamek is a store builder, not a marketplace. Your customers order from you, directly.
-            </p>
-        </div>
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- ROW 7: ORDERS MADE SIMPLE. PAYMENTS MADE DIRECT. -->
-    <!-- ==================================================== -->
-    <section class="landing-row-direct shadow-sm">
-        <div class="landing-content-inner container py-2">
-            
-            <!-- Section Header -->
-            <div class="text-center mb-5">
-                <p class="direct-kicker mb-2">
-                    NO MIDDLEMAN
-                </p>
-                <h2 class="direct-headline mb-0">
-                    ORDERS MADE SIMPLE.<br>
-                    PAYMENTS MADE DIRECT.
-                </h2>
-            </div>
-
-            <!-- Two Feature Cards Grid -->
-            <div class="row row-cols-1 row-cols-md-2 g-4">
-                
-                <!-- Left Card: Delivery -->
-                <div class="col">
-                    <div class="direct-info-card">
-                        <div class="direct-icon-circle">
-                            <i class="fa-solid fa-motorcycle"></i>
-                        </div>
-                        <h3>WHAT ABOUT DELIVERY?</h3>
-                        <p class="direct-card-subtitle">
-                            Want your customers to enjoy delivery?
-                        </p>
-                        <p class="direct-card-text">
-                            Customers discuss directly with the vendor to arrange a third-party courier or delivery service. Customers pay the actual product price, while delivery charges are arranged and paid separately.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Right Card: Payments -->
-                <div class="col">
-                    <div class="direct-info-card">
-                        <div class="direct-icon-circle">
-                            <i class="fa-solid fa-wallet"></i>
-                        </div>
-                        <h3>HOW DO CUSTOMERS PAY?</h3>
-                        <p class="direct-card-subtitle">
-                            Simple. Direct. Between you and your customer.
-                        </p>
-                        <p class="direct-card-text">
-                            When the order summary reaches your WhatsApp, you provide your payment details directly.
-                        </p>
-                        <div class="payment-method-pills">
-                            <span class="payment-pill-badge">
-                                <i class="fa-solid fa-qrcode"></i> DuitNow QR
-                            </span>
-                            <span class="payment-pill-badge">
-                                <i class="fa-solid fa-building-columns"></i> Online bank transfer
-                            </span>
-                            <span class="payment-pill-badge">
-                                <i class="fa-solid fa-handshake"></i> Other agreed arrangements
-                            </span>
-                        </div>
-                    </div>
-                </div>
 
             </div>
+        </section>
 
-            <!-- Bottom Disclaimer Banner -->
-            <div class="direct-disclaimer-box">
-                <i class="fa-solid fa-circle-info"></i>
-                <div>
-                    <strong class="text-dark">Kedai WA Kamek does not collect customer payments or process transactions.</strong> Payments are handled directly between customers and vendors.
-                </div>
-            </div>
+        <!-- Section 06: Keep Things Simple -->
+        <section id="section-6" class="container-fluid py-5 text-white" style="background-color: #0b2618;">
+            <div class="container py-3 py-lg-4">
 
-        </div>
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- ROW 8: EXPLORE KEDAI DIRECTORY -->
-    <!-- ==================================================== -->
-    <section id="explore" class="landing-row-explore shadow-sm">
-        <div class="landing-content-inner container py-2">
-            
-            <!-- Section Header & Top Explore Button -->
-            <div class="row align-items-center mb-4">
-                <div class="col-lg-8 text-center text-lg-start mb-3 mb-lg-0">
-                    <p class="explore-tagline fst-italic mb-1">
-                        Discover local businesses
+                <!-- Section Header -->
+                <div class="text-center mb-5">
+                    <p class="small fw-semibold text-uppercase mb-2" style="color: #84f56b; letter-spacing: 0.14em;">
+                        KEEP THINGS SIMPLE
                     </p>
-                    <h2 class="explore-headline mb-2">
-                        EXPLORE KEDAI
+                    <h2 class="display-6 fw-bold text-uppercase lh-1 mb-0 text-white">
+                        YOUR BUSINESS. YOUR SALES. YOUR RULES.
                     </h2>
-                    <p class="explore-subtext mb-0 mx-auto mx-lg-0">
-                        Browse local food, fashion, produce, crafts and more from businesses across Sarawak and Malaysia.
+                </div>
+
+                <!-- 6-Item Feature Grid -->
+                <div class="row g-4 g-lg-5">
+
+                    <!-- Item 1: 100% Of Your Sales -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-percent fs-5 flex-shrink-0" style="color: #84f56b;"></i>
+                            <h3 class="h6 fw-bold text-uppercase mb-0 text-white" style="letter-spacing: 0.03em;">
+                                100% OF YOUR SALES
+                            </h3>
+                        </div>
+                        <p class="small mb-0" style="color: rgba(255, 255, 255, 0.72);">
+                            We don’t charge commission on your orders. Your sales belong to you.
+                        </p>
+                    </div>
+
+                    <!-- Item 2: One-Time Setup Fee -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-tools fs-5 flex-shrink-0" style="color: #84f56b;"></i>
+                            <h3 class="h6 fw-bold text-uppercase mb-0 text-white" style="letter-spacing: 0.03em;">
+                                ONE-TIME SETUP FEE
+                            </h3>
+                        </div>
+                        <p class="small mb-0" style="color: rgba(255, 255, 255, 0.72);">
+                            Pay a once-off setup fee for your store. No per-order commission.
+                        </p>
+                    </div>
+
+                    <!-- Item 3: No Customer Registration -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-person-x-fill fs-5 flex-shrink-0" style="color: #84f56b;"></i>
+                            <h3 class="h6 fw-bold text-uppercase mb-0 text-white" style="letter-spacing: 0.03em;">
+                                NO CUSTOMER REGISTRATION
+                            </h3>
+                        </div>
+                        <p class="small mb-0" style="color: rgba(255, 255, 255, 0.72);">
+                            Customers can browse and order without creating accounts.
+                        </p>
+                    </div>
+
+                    <!-- Item 4: Easy To Use -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-lightning-charge-fill fs-5 flex-shrink-0" style="color: #84f56b;"></i>
+                            <h3 class="h6 fw-bold text-uppercase mb-0 text-white" style="letter-spacing: 0.03em;">
+                                EASY TO USE
+                            </h3>
+                        </div>
+                        <p class="small mb-0" style="color: rgba(255, 255, 255, 0.72);">
+                            A straightforward store designed for everyday customers and business owners.
+                        </p>
+                    </div>
+
+                    <!-- Item 5: No App Download -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-globe2 fs-5 flex-shrink-0" style="color: #84f56b;"></i>
+                            <h3 class="h6 fw-bold text-uppercase mb-0 text-white" style="letter-spacing: 0.03em;">
+                                NO APP DOWNLOAD
+                            </h3>
+                        </div>
+                        <p class="small mb-0" style="color: rgba(255, 255, 255, 0.72);">
+                            Works through a web browser. Just share your store link or QR code.
+                        </p>
+                    </div>
+
+                    <!-- Item 6: Cancel Anytime -->
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-shield-check fs-5 flex-shrink-0" style="color: #84f56b;"></i>
+                            <h3 class="h6 fw-bold text-uppercase mb-0 text-white" style="letter-spacing: 0.03em;">
+                                CANCEL ANYTIME
+                            </h3>
+                        </div>
+                        <p class="small mb-0" style="color: rgba(255, 255, 255, 0.72);">
+                            Enjoy flexibility without complicated commitments.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Divider & Bottom Italic Note -->
+                <hr class="mt-5 mb-4 border-secondary border-opacity-50">
+                <p class="fst-italic text-center small mb-0" style="color: rgba(255, 255, 255, 0.68);">
+                    Kedai WA Kamek is a store builder, not a marketplace. Your customers order from you, directly.
+                </p>
+
+            </div>
+        </section>
+
+        <!-- Section 07: No Middleman -->
+        <section id="section-7" class="container-fluid py-5 border-top border-bottom" style="background-color: #fbfcfa; color: #13261d;">
+            <div class="container py-3 py-lg-4">
+
+                <!-- Section Header -->
+                <div class="text-center mb-5">
+                    <p class="small fw-semibold text-uppercase mb-2" style="color: #4f6659; letter-spacing: 0.14em;">
+                        NO MIDDLEMAN
+                    </p>
+                    <h2 class="display-6 fw-bold text-uppercase lh-1 mb-0" style="color: #0f2018;">
+                        ORDERS MADE SIMPLE.<br>
+                        PAYMENTS MADE DIRECT.
+                    </h2>
+                </div>
+
+                <!-- Two-Column Cards -->
+                <div class="row g-4">
+
+                    <!-- Left Card: What About Delivery? -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card h-100 rounded-4 border p-3 p-sm-4 p-lg-5" style="background-color: #f2f4ee; border-color: #e2e6de !important;">
+                            <div class="card-body p-0">
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-circle mb-4"
+                                    style="width: 46px; height: 46px; background-color: #dcebe0; color: #15803d;">
+                                    <i class="bi bi-bicycle fs-5"></i>
+                                </span>
+
+                                <h3 class="h5 fw-bold text-uppercase mb-1" style="color: #0f2018;">
+                                    WHAT ABOUT DELIVERY?
+                                </h3>
+                                <p class="fst-italic small mb-3" style="color: #56685e;">
+                                    Want your customers to enjoy delivery?
+                                </p>
+                                <p class="small mb-0" style="color: #4c5d54; line-height: 1.65;">
+                                    Customers discuss directly with the vendor to arrange a third-party courier or delivery service. Customers pay the actual product price, while delivery charges are arranged and paid separately.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Card: How Do Customers Pay? -->
+                    <div class="col-12 col-lg-6">
+                        <div class="card h-100 rounded-4 border p-3 p-sm-4 p-lg-5" style="background-color: #f2f4ee; border-color: #e2e6de !important;">
+                            <div class="card-body p-0">
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-circle mb-4"
+                                    style="width: 46px; height: 46px; background-color: #dcebe0; color: #15803d;">
+                                    <i class="bi bi-wallet2 fs-5"></i>
+                                </span>
+
+                                <h3 class="h5 fw-bold text-uppercase mb-1" style="color: #0f2018;">
+                                    HOW DO CUSTOMERS PAY?
+                                </h3>
+                                <p class="fst-italic small mb-3" style="color: #56685e;">
+                                    Simple. Direct. Between you and your customer.
+                                </p>
+                                <p class="small mb-4" style="color: #4c5d54; line-height: 1.65;">
+                                    When the order summary reaches your WhatsApp, you provide your payment details directly.
+                                </p>
+
+                                <!-- Payment Method Pills -->
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge rounded-pill bg-white border px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2"
+                                        style="color: #143326; border-color: #dce2da !important; font-size: 0.78rem;">
+                                        <i class="bi bi-qr-code text-success"></i>
+                                        <span>DuitNow QR</span>
+                                    </span>
+
+                                    <span class="badge rounded-pill bg-white border px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2"
+                                        style="color: #143326; border-color: #dce2da !important; font-size: 0.78rem;">
+                                        <i class="bi bi-bank text-success"></i>
+                                        <span>Online bank transfer</span>
+                                    </span>
+
+                                    <span class="badge rounded-pill bg-white border px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2"
+                                        style="color: #143326; border-color: #dce2da !important; font-size: 0.78rem;">
+                                        <i class="bi bi-hand-thumbs-up text-success"></i>
+                                        <span>Other agreed arrangements</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Bottom Disclaimer Pill/Banner -->
+                <div class="d-flex justify-content-center mt-4 pt-1">
+                    <div class="d-flex align-items-center gap-3 rounded-4 border bg-white px-4 py-3 shadow-2xs"
+                        style="max-width: 720px; border-color: #dce2da !important;">
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                            style="width: 22px; height: 22px; background-color: #4b5d54; color: #ffffff; font-size: 0.75rem;">
+                            <i class="bi bi-info"></i>
+                        </span>
+                        <p class="small mb-0 text-start" style="color: #4c5d54;">
+                            <strong class="fw-bold" style="color: #0f2018;">Kedai WA Kamek does not collect customer payments or process transactions.</strong>
+                            Payments are handled directly between customers and vendors.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Section 08: Explore Kedai -->
+        <section id="section-8" class="container-fluid py-5 border-top border-bottom" style="background-color: #f4f5ef; color: #13261d;">
+            <div class="container py-3 py-lg-4">
+
+                <!-- Header Row + Right Pill CTA -->
+                <div class="row align-items-start align-items-md-end justify-content-between g-3 mb-4">
+                    <div class="col-12 col-md-8">
+                        <p class="fst-italic fw-medium mb-1" style="color: #4f7d2f;">Discover local businesses</p>
+                        <h2 class="display-6 fw-bold text-uppercase lh-1 mb-2" style="color: #0e1f17;">
+                            EXPLORE KEDAI
+                        </h2>
+                        <p class="small mb-0" style="color: #56685e; max-width: 520px;">
+                            Browse local food, fashion, produce, crafts and more from businesses across Sarawak and Malaysia.
+                        </p>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <a href="#section-10"
+                        class="btn rounded-pill px-4 py-2 fw-bold text-uppercase border-0 d-inline-flex align-items-center justify-content-center gap-2 w-100 w-auto"
+                        style="background-color: #0b2b1d; color: #ffffff; font-size: 0.75rem; letter-spacing: 0.04em;">
+                            <span>EXPLORE ALL KEDAI</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Category Filter Pills -->
+                <div class="d-flex flex-wrap justify-content-center gap-2 mb-5">
+                    <?php foreach ($kedaiCategories as $index => $category): ?>
+                        <?php $isActive = ($index === 0); ?>
+                        <button type="button"
+                                class="btn rounded-pill px-3 py-2 fw-semibold border <?php echo $isActive ? 'active' : ''; ?>"
+                                data-kedai-filter="<?php echo htmlspecialchars($category); ?>"
+                                style="<?php echo $isActive
+                                    ? 'background-color: #0b2b1d; color: #ffffff; border-color: #0b2b1d; font-size: 0.8rem;'
+                                    : 'background-color: #ffffff; color: #13261d; border-color: #dce2da; font-size: 0.8rem;'; ?>">
+                            <?php echo htmlspecialchars($category); ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Store Cards Grid -->
+                <div class="row g-4" id="kedaiCardsRow">
+                    <?php foreach ($kedaiItems as $item): ?>
+                        <?php
+                            $name = htmlspecialchars($item['name'] ?? 'KEDAI');
+                            $category = htmlspecialchars($item['category'] ?? 'Food & Beverages');
+                            $tagLabel = htmlspecialchars($item['tag_label'] ?? 'SAMPLE LISTING');
+                            $description = htmlspecialchars($item['description'] ?? '');
+                            $location = htmlspecialchars($item['location'] ?? 'Sarawak, Malaysia');
+                            $hours = htmlspecialchars($item['hours'] ?? '8:00 am – 6:00 pm');
+                            $deliveryNote = htmlspecialchars($item['delivery_note'] ?? 'Delivery arranged with vendor');
+                            $isOpen = !empty($item['is_open']);
+                            $icon = htmlspecialchars($item['icon'] ?? 'bi-shop');
+                            $badgeBg = htmlspecialchars($item['badge_bg'] ?? '#0b2b1d');
+                            $badgeFg = htmlspecialchars($item['badge_fg'] ?? '#9df557');
+                            $logoUrl = htmlspecialchars($item['logo_url'] ?? 'https://placehold.co/96x96/0b2b1d/9df557?text=Store');
+                            $storeUrl = htmlspecialchars($item['store_url'] ?? '#section-10');
+                        ?>
+                        <div class="col-12 col-sm-6 col-xl-3" data-kedai-category="<?php echo $category; ?>">
+                            <div class="card h-100 rounded-4 border-0 shadow-sm bg-white p-3 p-sm-4">
+                                <div class="card-body d-flex flex-column p-0">
+
+                                    <!-- Top Badges Row -->
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+                                        <span class="badge rounded-pill px-3 py-2 fw-bold text-uppercase"
+                                            style="background-color: #0b2b1d; color: #ffffff; font-size: 0.65rem; letter-spacing: 0.04em;">
+                                            <?php echo strtoupper($category); ?>
+                                        </span>
+                                        <span class="badge rounded-pill px-3 py-2 fw-semibold text-uppercase border"
+                                            style="background-color: #f8f9f8; color: #3d4f46; border-color: #dfe4de !important; font-size: 0.65rem; letter-spacing: 0.04em;">
+                                            <?php echo $tagLabel; ?>
+                                        </span>
+                                    </div>
+
+                                    <!-- Store Logo Placeholder + Open/Closed Status Pill -->
+                                    <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
+                                        <div class="position-relative d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0 overflow-hidden"
+                                            style="width: 56px; height: 56px; background-color: <?php echo $badgeBg; ?>; color: <?php echo $badgeFg; ?>;">
+                                            <img
+                                                src="<?php echo $logoUrl; ?>"
+                                                alt="<?php echo $name; ?> Logo Placeholder"
+                                                class="w-100 h-100 object-fit-cover position-absolute top-0 start-0 opacity-25"
+                                            >
+                                            <i class="bi <?php echo $icon; ?> fs-4 position-relative"></i>
+                                        </div>
+
+                                        <?php if ($isOpen): ?>
+                                            <span class="badge rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1"
+                                                style="background-color: #e7f6ec; color: #15803d; font-size: 0.72rem;">
+                                                <i class="bi bi-circle-fill" style="font-size: 0.45rem;"></i>
+                                                <span>Open</span>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1"
+                                                style="background-color: #eef0ef; color: #5c6d64; font-size: 0.72rem;">
+                                                <i class="bi bi-circle-fill" style="font-size: 0.45rem;"></i>
+                                                <span>Closed</span>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <!-- Store Title & Description -->
+                                    <h3 class="h6 fw-bold text-uppercase mb-2" style="color: #0e1f17; letter-spacing: 0.02em;">
+                                        <?php echo $name; ?>
+                                    </h3>
+                                    <p class="small mb-4" style="color: #56685e;">
+                                        <?php echo $description; ?>
+                                    </p>
+
+                                    <!-- Metadata Lines -->
+                                    <div class="d-flex flex-column gap-2 small mb-4 mt-auto" style="color: #4c5d54;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-geo-alt-fill text-success flex-shrink-0"></i>
+                                            <span><?php echo $location; ?></span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-clock-fill text-success flex-shrink-0"></i>
+                                            <span><?php echo $hours; ?></span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-truck text-success flex-shrink-0"></i>
+                                            <span><?php echo $deliveryNote; ?></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Action Button -->
+                                    <a href="<?php echo $storeUrl; ?>"
+                                    class="btn rounded-pill w-100 py-2 fw-bold text-uppercase border-0"
+                                    style="background-color: #0b2b1d; color: #ffffff; font-size: 0.75rem; letter-spacing: 0.04em;">
+                                        VIEW STORE
+                                    </a>
+
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Section 09: Supported By Local Partners -->
+        <section id="section-9" class="container-fluid py-5 border-top border-bottom" style="background-color: #f4f5ef; color: #13261d;">
+            <div class="container py-3 py-lg-4">
+
+                <!-- Section Header -->
+                <div class="text-center mb-5">
+                    <p class="fst-italic fw-medium mb-1" style="color: #4f7d2f;">Growing local together</p>
+                    <h2 class="display-6 fw-bold text-uppercase lh-1 mb-2" style="color: #0e1f17;">
+                        SUPPORTED BY LOCAL PARTNERS
+                    </h2>
+                    <p class="small mx-auto mb-0" style="color: #56685e; max-width: 520px;">
+                        Kedai WA Kamek is made possible with the support of partners who believe in helping local businesses grow digitally.
                     </p>
                 </div>
-                <div class="col-lg-4 text-center text-lg-end">
-                    <a href="explore.php" class="btn-explore-all">
-                        EXPLORE ALL KEDAI <i class="fa-solid fa-arrow-right ms-2"></i>
+
+                <!-- Subsection 1: Our Sponsors (4 Slots) -->
+                <div class="mb-5">
+                    <p class="small fw-semibold text-uppercase mb-3" style="color: #4f6659; letter-spacing: 0.14em;">
+                        OUR SPONSORS
+                    </p>
+                    <div class="row g-3 g-md-4">
+                        <?php for ($i = 1; $i <= 4; $i++): ?>
+                            <div class="col-12 col-sm-6 col-lg-3">
+                                <div class="card h-100 rounded-4 bg-white p-3" style="border: 1px dashed #c8d2c9 !important;">
+                                    <div class="card-body d-flex flex-column justify-content-between p-2" style="min-height: 118px;">
+                                        <div>
+                                            <span class="badge rounded-pill px-3 py-1 fw-semibold text-uppercase"
+                                                style="background-color: #eef0eb; color: #6c7d73; font-size: 0.65rem; letter-spacing: 0.05em;">
+                                                SPONSORED
+                                            </span>
+                                        </div>
+                                        <div class="d-flex flex-column align-items-center justify-content-center my-auto py-2 text-center">
+                                            <img
+                                                src="https://placehold.co/180x44/ffffff/8a9990?text=Sponsor+Logo+<?php echo $i; ?>"
+                                                alt="Sponsor Logo Placeholder <?php echo $i; ?>"
+                                                class="img-fluid object-fit-contain"
+                                                style="max-height: 36px;"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+
+                <!-- Subsection 2: Powered By (3 Slots) -->
+                <div class="mb-5">
+                    <p class="small fw-semibold text-uppercase mb-3" style="color: #4f6659; letter-spacing: 0.14em;">
+                        POWERED BY
+                    </p>
+                    <div class="row g-3 g-md-4">
+                        <?php for ($j = 1; $j <= 3; $j++): ?>
+                            <div class="col-12 col-md-4">
+                                <div class="card h-100 rounded-4 bg-white p-3" style="border: 1px dashed #c8d2c9 !important;">
+                                    <div class="card-body d-flex flex-column justify-content-between p-2" style="min-height: 118px;">
+                                        <div>
+                                            <span class="badge rounded-pill px-3 py-1 fw-semibold text-uppercase"
+                                                style="background-color: #eef0eb; color: #6c7d73; font-size: 0.65rem; letter-spacing: 0.05em;">
+                                                PARTNER
+                                            </span>
+                                        </div>
+                                        <div class="d-flex flex-column align-items-center justify-content-center my-auto py-2 text-center">
+                                            <img
+                                                src="https://placehold.co/200x44/ffffff/8a9990?text=Partner+Logo+<?php echo $j; ?>"
+                                                alt="Partner Logo Placeholder <?php echo $j; ?>"
+                                                class="img-fluid object-fit-contain"
+                                                style="max-height: 36px;"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+
+                <!-- Bottom Dark Sponsor Callout Banner -->
+                <div class="card border-0 rounded-4 shadow-sm p-4" style="background-color: #0b2618; color: #ffffff;">
+                    <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
+                                style="width: 48px; height: 48px; background-color: #9df557; color: #0b2618;">
+                                <i class="bi bi-handshake fs-4"></i>
+                            </span>
+                            <div>
+                                <h3 class="h6 fw-bold text-uppercase mb-1 text-white" style="letter-spacing: 0.03em;">
+                                    INTERESTED IN BECOMING A SPONSOR?
+                                </h3>
+                                <p class="small mb-0" style="color: rgba(255, 255, 255, 0.75);">
+                                    Support local Malaysian businesses and grow alongside them.
+                                </p>
+                            </div>
+                        </div>
+
+                        <a href="#section-11"
+                        class="btn rounded-pill px-4 py-2 fw-bold text-uppercase border-0 d-inline-flex align-items-center justify-content-center gap-2 w-100 w-auto flex-shrink-0"
+                        style="background-color: #9df557; color: #0b2618; font-size: 0.75rem; letter-spacing: 0.04em;">
+                            <i class="bi bi-whatsapp fs-6"></i>
+                            <span>CONTACT US ON WHATSAPP</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Section 10: Ready To Take Your Business Digital? -->
+        <section id="section-10" class="container-fluid py-5 text-white" style="background-color: #0b2618;">
+            <div class="container py-4 py-lg-5 text-center">
+
+                <!-- Eyebrow, Headline & Subtitle -->
+                <p class="fst-italic fw-medium mb-2" style="color: #9df557;">Siap untuk berniaga online?</p>
+                <h2 class="display-5 fw-bold text-uppercase lh-1 mb-3 text-white">
+                    READY TO TAKE YOUR<br>
+                    BUSINESS DIGITAL?
+                </h2>
+                <p class="small mx-auto mb-4 mb-md-5" style="color: rgba(255, 255, 255, 0.78); max-width: 540px;">
+                    Let your customers order easily while you focus on growing your business.
+                </p>
+
+                <!-- Primary & Secondary Pill Buttons -->
+                <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-center gap-3 mb-5">
+                    <a href="#section-11"
+                    class="btn rounded-pill px-4 py-3 fw-bold text-uppercase border-0 w-100 w-auto"
+                    style="background-color: #f59322; color: #143326; font-size: 0.78rem; letter-spacing: 0.04em; box-shadow: 0 0 24px rgba(245, 147, 34, 0.35);">
+                        GET YOUR STORE SET UP
+                    </a>
+
+                    <a href="#section-8"
+                    class="btn rounded-pill px-4 py-3 fw-bold text-uppercase w-100 w-auto"
+                    style="background-color: rgba(255, 255, 255, 0.06); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.25); font-size: 0.78rem; letter-spacing: 0.04em;">
+                        LIST MY STORE
                     </a>
                 </div>
-            </div>
 
-            <!-- Category Filter Chips -->
-            <div class="explore-filter-chips">
-                <a href="#food" class="filter-chip active">Food & Beverages</a>
-                <a href="#fashion" class="filter-chip">Fashion & Apparel</a>
-                <a href="#produce" class="filter-chip">Fresh Produce</a>
-                <a href="#crafts" class="filter-chip">Handmade Crafts</a>
-                <a href="#others" class="filter-chip">Others</a>
-            </div>
-
-            <!-- 4-Column Vendor Cards Grid -->
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-                
-                <!-- Vendor Card 1: Dapur Mak Long -->
-                <div class="col">
-                    <div class="vendor-dir-card">
-                        <div class="vendor-card-header-img" style="background-image: url('/simple_ordering_multivendor/assets/vendor-1.jpg');">
-                            <span class="vendor-cat-badge">Food & Beverages</span>
-                            <span class="vendor-sample-badge">Sample Listing</span>
-                        </div>
-                        <div class="vendor-avatar-row">
-                            <div class="vendor-avatar-circle">
-                                <i class="fa-solid fa-utensils"></i>
-                            </div>
-                            <span class="vendor-status-pill status-open">
-                                <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Open
-                            </span>
-                        </div>
-                        <div class="vendor-card-body">
-                            <h3 class="vendor-store-title">DAPUR MAK LONG</h3>
-                            <p class="vendor-store-desc">Masakan kampung, rasa macam rumah sendiri.</p>
-                            <ul class="vendor-meta-list">
-                                <li><i class="fa-solid fa-location-dot"></i> Gedong, Sarawak</li>
-                                <li><i class="fa-solid fa-clock"></i> 7:00 am – 2:00 pm</li>
-                                <li><i class="fa-solid fa-truck"></i> Delivery arranged with vendor</li>
-                            </ul>
-                            <a href="store.php?id=1" class="btn-view-store">VIEW STORE</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Vendor Card 2: Kopitiam Ah Seng -->
-                <div class="col">
-                    <div class="vendor-dir-card">
-                        <div class="vendor-card-header-img" style="background-image: url('/simple_ordering_multivendor/assets/vendor-2.jpg');">
-                            <span class="vendor-cat-badge">Food & Beverages</span>
-                            <span class="vendor-sample-badge">Sample Listing</span>
-                        </div>
-                        <div class="vendor-avatar-row">
-                            <div class="vendor-avatar-circle">
-                                <i class="fa-solid fa-mug-hot"></i>
-                            </div>
-                            <span class="vendor-status-pill status-open">
-                                <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Open
-                            </span>
-                        </div>
-                        <div class="vendor-card-body">
-                            <h3 class="vendor-store-title">KOPITIAM AH SENG</h3>
-                            <p class="vendor-store-desc">Kopi tarik pagi, roti bakar kaya sejak 1988.</p>
-                            <ul class="vendor-meta-list">
-                                <li><i class="fa-solid fa-location-dot"></i> Kuching, Sarawak</li>
-                                <li><i class="fa-solid fa-clock"></i> 6:30 am – 3:00 pm</li>
-                                <li><i class="fa-solid fa-truck"></i> Delivery arranged with vendor</li>
-                            </ul>
-                            <a href="store.php?id=2" class="btn-view-store">VIEW STORE</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Vendor Card 3: Kek Lapis Mama Ros -->
-                <div class="col">
-                    <div class="vendor-dir-card">
-                        <div class="vendor-card-header-img" style="background-image: url('/simple_ordering_multivendor/assets/vendor-3.jpg');">
-                            <span class="vendor-cat-badge">Food & Beverages</span>
-                            <span class="vendor-sample-badge">Sample Listing</span>
-                        </div>
-                        <div class="vendor-avatar-row">
-                            <div class="vendor-avatar-circle" style="background-color: #b2ff81; color: #0b291a;">
-                                <i class="fa-solid fa-cake-candles"></i>
-                            </div>
-                            <span class="vendor-status-pill status-closed">
-                                <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Closed
-                            </span>
-                        </div>
-                        <div class="vendor-card-body">
-                            <h3 class="vendor-store-title">KEK LAPIS MAMA ROS</h3>
-                            <p class="vendor-store-desc">Kek lapis Sarawak buatan tangan.</p>
-                            <ul class="vendor-meta-list">
-                                <li><i class="fa-solid fa-location-dot"></i> Kuching, Sarawak</li>
-                                <li><i class="fa-solid fa-clock"></i> 9:00 am – 6:00 pm</li>
-                                <li><i class="fa-solid fa-truck"></i> Delivery arranged with vendor</li>
-                            </ul>
-                            <a href="store.php?id=3" class="btn-view-store">VIEW STORE</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Vendor Card 4: Sample Batik & Tudung Store -->
-                <div class="col">
-                    <div class="vendor-dir-card">
-                        <div class="vendor-card-header-img" style="background-image: url('/simple_ordering_multivendor/assets/vendor-4.jpg');">
-                            <span class="vendor-cat-badge">Fashion & Apparel</span>
-                            <span class="vendor-sample-badge">Sample Listing</span>
-                        </div>
-                        <div class="vendor-avatar-row">
-                            <div class="vendor-avatar-circle">
-                                <i class="fa-solid fa-shirt"></i>
-                            </div>
-                            <span class="vendor-status-pill status-open">
-                                <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Open
-                            </span>
-                        </div>
-                        <div class="vendor-card-body">
-                            <h3 class="vendor-store-title">SAMPLE BATIK & TUDUNG</h3>
-                            <p class="vendor-store-desc">Batik, baju kurung and everyday tudung.</p>
-                            <ul class="vendor-meta-list">
-                                <li><i class="fa-solid fa-location-dot"></i> Kuching, Sarawak</li>
-                                <li><i class="fa-solid fa-clock"></i> 10:00 am – 8:00 pm</li>
-                                <li><i class="fa-solid fa-truck"></i> Delivery arranged with vendor</li>
-                            </ul>
-                            <a href="store.php?id=4" class="btn-view-store">VIEW STORE</a>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- ROW 9: SUPPORTED BY LOCAL PARTNERS -->
-    <!-- ==================================================== -->
-    <section id="partners" class="landing-full-row landing-row-partners shadow-sm">
-        <div class="landing-content-inner container py-2" style="max-width: 980px;">
-            
-            <!-- Section Header -->
-            <div class="text-center mb-5">
-                <p class="fw-bold fst-italic mb-1" style="color: #5b8c3e; font-family: cursive; font-size: 1.1rem;">
-                    Growing local together
-                </p>
-                <h2 class="fw-bold display-5 text-dark mb-2" style="color: #0b291a !important; letter-spacing: -1px;">
-                    SUPPORTED BY LOCAL PARTNERS
-                </h2>
-                <p class="text-muted small mx-auto mb-0" style="max-width: 520px;">
-                    Kedai WA Kamek is made possible with the support of partners who believe in helping local businesses grow digitally.
-                </p>
-            </div>
-
-            <!-- Sub-grid 1: Our Sponsors (4 Columns) -->
-            <div class="mb-4">
-                <p class="text-muted fw-bold text-uppercase mb-2" style="font-size: 0.72rem; letter-spacing: 1px;">
-                    OUR SPONSORS
-                </p>
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-3">
-                    <div class="col">
-                        <div class="sponsor-slot-card">
-                            <span class="slot-pill-label">SPONSORED</span>
-                            <span class="text-muted small mt-2">Sponsor logo here</span>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="sponsor-slot-card">
-                            <span class="slot-pill-label">SPONSORED</span>
-                            <span class="text-muted small mt-2">Sponsor logo here</span>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="sponsor-slot-card">
-                            <span class="slot-pill-label">SPONSORED</span>
-                            <span class="text-muted small mt-2">Sponsor logo here</span>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="sponsor-slot-card">
-                            <span class="slot-pill-label">SPONSORED</span>
-                            <span class="text-muted small mt-2">Sponsor logo here</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sub-grid 2: Powered By (3 Columns) -->
-            <div class="mb-5">
-                <p class="text-muted fw-bold text-uppercase mb-2" style="font-size: 0.72rem; letter-spacing: 1px;">
-                    POWERED BY
-                </p>
-                <div class="row row-cols-1 row-cols-md-3 g-3">
-                    <div class="col">
-                        <div class="sponsor-slot-card">
-                            <span class="slot-pill-label">PARTNER</span>
-                            <span class="text-muted small mt-2">Partner logo here</span>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="sponsor-slot-card">
-                            <span class="slot-pill-label">PARTNER</span>
-                            <span class="text-muted small mt-2">Partner logo here</span>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="sponsor-slot-card">
-                            <span class="slot-pill-label">PARTNER</span>
-                            <span class="text-muted small mt-2">Partner logo here</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bottom Dark Green Sponsor Banner -->
-            <div class="sponsor-cta-banner d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 shadow-sm">
-                <div class="d-flex align-items-center gap-3 text-center text-md-start flex-column flex-md-row">
-                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 46px; height: 46px; background-color: #b2ff81; color: #0b291a;">
-                        <i class="fa-regular fa-handshake fs-5"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold text-white mb-0" style="letter-spacing: 0.3px;">INTERESTED IN BECOMING A SPONSOR?</h5>
-                        <p class="text-white-50 small mb-0">Support local Malaysian businesses and grow alongside them.</p>
-                    </div>
-                </div>
-                <a href="https://wa.me/601169893389?text=Hi%20Kedai%20WA%20Kamek%2C%20I%20am%20interested%20in%20becoming%20a%20sponsor." target="_blank" class="btn-lime-pill flex-shrink-0">
-                    <i class="fa-brands fa-whatsapp me-2 fs-6"></i> CONTACT US ON WHATSAPP
-                </a>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- ==================================================== -->
-    <!-- ROW 10: READY TO TAKE YOUR BUSINESS DIGITAL? (CTA) -->
-    <!-- ==================================================== -->
-    <section id="become-vendor" class="landing-row-cta-banner shadow-sm">
-        <div class="landing-content-inner container py-2">
-            
-            <!-- Header & Subtext -->
-            <p class="cta-banner-tagline fst-italic mb-2">
-                Siap untuk berniaga online?
-            </p>
-            <h2 class="cta-banner-headline">
-                READY TO TAKE YOUR<br>BUSINESS DIGITAL?
-            </h2>
-            <p class="cta-banner-subtext">
-                Let your customers order easily while you focus on growing your business.
-            </p>
-
-            <!-- Primary CTAs -->
-            <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap mb-5">
-                <a href="https://api.whatsapp.com/send/?phone=601169893389&text=Hi+Kedai+WA+Kamek%2C+I%27d+like+to+get+my+digital+store+set+up.&type=phone_number&app_absent=0" target="_blank" class="btn btn-cta-orange">
-                    GET YOUR STORE SET UP
-                </a>
-                <a href="https://api.whatsapp.com/send/?phone=601169893389&text=Hi+Kedai+WA+Kamek%2C+I+have+a+store+with+you+and+I%27d+like+it+listed+in+Explore+Kedai.&type=phone_number&app_absent=0" target="_blank" class="btn btn-cta-outline">
-                    LIST MY STORE
-                </a>
-            </div>
-
-            <!-- WhatsApp Direct Contact Section -->
-            <div>
-                <p class="cta-whatsapp-label mb-3">
+                <!-- WhatsApp Direct Chat Label & Pill Buttons -->
+                <p class="small fw-semibold text-uppercase mb-3" style="color: #84f56b; letter-spacing: 0.14em; font-size: 0.72rem;">
                     CHAT WITH US ON WHATSAPP
                 </p>
-                <div class="whatsapp-contact-pills">
-                    <a href="https://api.whatsapp.com/send/?phone=601169893389" target="_blank" class="wa-pill-item">
-                        <i class="fa-brands fa-whatsapp"></i> +6011-69893389
+
+                <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-center gap-3">
+                    <a href="https://wa.me/601169893389"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-2 w-100 w-auto"
+                    style="background-color: rgba(255, 255, 255, 0.04); color: #e9f2ec; border: 1px solid rgba(255, 255, 255, 0.18); font-size: 0.85rem;">
+                        <i class="bi bi-whatsapp" style="color: #4ade80;"></i>
+                        <span>+6011-69893389</span>
                     </a>
-                    <a href="https://api.whatsapp.com/send/?phone=60103055330" target="_blank" class="wa-pill-item">
-                        <i class="fa-brands fa-whatsapp"></i> +6010-3055330
+
+                    <a href="https://wa.me/60103055330"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-2 w-100 w-auto"
+                    style="background-color: rgba(255, 255, 255, 0.04); color: #e9f2ec; border: 1px solid rgba(255, 255, 255, 0.18); font-size: 0.85rem;">
+                        <i class="bi bi-whatsapp" style="color: #4ade80;"></i>
+                        <span>+6010-3055330</span>
                     </a>
                 </div>
+
             </div>
+        </section>
 
-        </div>
-    </section>
+        <?php
+            $faqList = [
+                [
+                    'q' => 'Does it work for fashion, produce and handmade crafts?',
+                    'a' => 'Yes. Kedai WA Kamek works for any business that sells products. Customers can add sizes, colours, weights, quantities or personalisation requests in the order notes.',
+                ],
+                [
+                    'q' => 'Do my customers need an account?',
+                    'a' => 'No. Customers can browse and order without signing in.',
+                ],
+                [
+                    'q' => 'Do I need to download an app?',
+                    'a' => 'No. Your store opens in any web browser through a link or QR code.',
+                ],
+                [
+                    'q' => 'Do you charge commission?',
+                    'a' => 'No. We charge a one-time setup fee per store. Your sales belong to you.',
+                ],
+                [
+                    'q' => 'How do customers pay?',
+                    'a' => 'You share your payment details on WhatsApp, such as DuitNow QR or online bank transfer.',
+                ],
+                [
+                    'q' => 'What about delivery?',
+                    'a' => 'You arrange delivery directly with the customer or a third-party courier. Delivery charges are separate.',
+                ],
+                [
+                    'q' => 'Can I cancel anytime?',
+                    'a' => 'Yes.',
+                ],
+                [
+                    'q' => 'How do I get listed in Explore Kedai?',
+                    'a' => 'Every store we set up can be listed in Explore Kedai. Contact us on WhatsApp and we will add you.',
+                ],
+            ];
+        ?>
 
-    <!-- ==================================================== -->
-    <!-- ROW 11: FREQUENTLY ASKED QUESTIONS (Matching Image) -->
-    <!-- ==================================================== -->
-    <section id="faq" class="landing-full-row landing-row-faq shadow-sm">
-        <div class="landing-content-inner container py-2" style="max-width: 820px;">
-            
-            <!-- Section Header -->
-            <div class="text-center mb-5">
-                <p class="fw-bold fst-italic mb-1" style="color: #5b8c3e; font-family: cursive; font-size: 1.15rem;">
-                    Got questions?
-                </p>
-                <h2 class="fw-bold display-5 text-dark mb-0" style="color: #0b291a !important; letter-spacing: -1px;">
-                    FREQUENTLY ASKED
-                </h2>
-            </div>
+        <!-- Section 11: Frequently Asked Questions -->
+        <section id="section-11" class="container-fluid py-5 border-top border-bottom" style="background-color: #f4f5ef; color: #13261d;">
+            <div class="container py-3 py-lg-4">
 
-            <!-- FAQ Accordion List -->
-            <div class="accordion faq-accordion" id="kedaiFaqAccordion">
-                
-                <!-- FAQ Item 1 -->
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="faqHeading1">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse1" aria-expanded="false" aria-controls="faqCollapse1">
-                            Does it work for fashion, produce and handmade crafts?
-                        </button>
+                <!-- Section Heading -->
+                <div class="text-center mb-4 mb-md-5">
+                    <p class="fst-italic fw-medium mb-1" style="color: #4f7d2f;">Got questions?</p>
+                    <h2 class="display-6 fw-bold text-uppercase lh-1 mb-0" style="color: #0e1f17;">
+                        FREQUENTLY ASKED
                     </h2>
-                    <div id="faqCollapse1" class="accordion-collapse collapse" aria-labelledby="faqHeading1" data-bs-parent="#kedaiFaqAccordion">
-                        <div class="accordion-body">
-                            Yes. Kedai WA Kamek works for any business that sells products. Customers can add sizes, colours, weights, quantities or personalisation requests in the order notes.
-                        </div>
-                    </div>
                 </div>
 
-                <!-- FAQ Item 2 -->
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="faqHeading2">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse2" aria-expanded="false" aria-controls="faqCollapse2">
-                            Do my customers need an account?
-                        </button>
-                    </h2>
-                    <div id="faqCollapse2" class="accordion-collapse collapse" aria-labelledby="faqHeading2" data-bs-parent="#kedaiFaqAccordion">
-                        <div class="accordion-body">
-                            No. Customers can browse and order without signing in.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ Item 3 -->
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="faqHeading3">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse3" aria-expanded="false" aria-controls="faqCollapse3">
-                            Do I need to download an app?
-                        </button>
-                    </h2>
-                    <div id="faqCollapse3" class="accordion-collapse collapse" aria-labelledby="faqHeading3" data-bs-parent="#kedaiFaqAccordion">
-                        <div class="accordion-body">
-                            No. Your store opens in any web browser through a link or QR code.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ Item 4 -->
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="faqHeading4">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse4" aria-expanded="false" aria-controls="faqCollapse4">
-                            Do you charge commission?
-                        </button>
-                    </h2>
-                    <div id="faqCollapse4" class="accordion-collapse collapse" aria-labelledby="faqHeading4" data-bs-parent="#kedaiFaqAccordion">
-                        <div class="accordion-body">
-                            No. We charge a one-time setup fee per store. Your sales belong to you.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ Item 5 -->
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="faqHeading5">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse5" aria-expanded="false" aria-controls="faqCollapse5">
-                            How do customers pay?
-                        </button>
-                    </h2>
-                    <div id="faqCollapse5" class="accordion-collapse collapse" aria-labelledby="faqHeading5" data-bs-parent="#kedaiFaqAccordion">
-                        <div class="accordion-body">
-                            You share your payment details on WhatsApp, such as DuitNow QR or online bank transfer.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ Item 6 -->
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="faqHeading6">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse6" aria-expanded="false" aria-controls="faqCollapse6">
-                            What about delivery?
-                        </button>
-                    </h2>
-                    <div id="faqCollapse6" class="accordion-collapse collapse" aria-labelledby="faqHeading6" data-bs-parent="#kedaiFaqAccordion">
-                        <div class="accordion-body">
-                            You arrange delivery directly with the customer or a third-party courier. Delivery charges are separate.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ Item 7 -->
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="faqHeading7">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse7" aria-expanded="false" aria-controls="faqCollapse7">
-                            Can I cancel anytime?
-                        </button>
-                    </h2>
-                    <div id="faqCollapse7" class="accordion-collapse collapse" aria-labelledby="faqHeading7" data-bs-parent="#kedaiFaqAccordion">
-                        <div class="accordion-body">
-                            Yes.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ Item 8 -->
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="faqHeading8">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqCollapse8" aria-expanded="false" aria-controls="faqCollapse8">
-                            How do I get listed in Explore Kedai?
-                        </button>
-                    </h2>
-                    <div id="faqCollapse8" class="accordion-collapse collapse" aria-labelledby="faqHeading8" data-bs-parent="#kedaiFaqAccordion">
-                        <div class="accordion-body">
-                            Every store we set up can be listed in Explore Kedai. Contact us on WhatsApp and we will add you.
+                <!-- Mobile-Friendly Bootstrap Accordion -->
+                <div class="row justify-content-center">
+                    <div class="col-12 col-lg-10 col-xl-9">
+                        <div class="accordion d-flex flex-column gap-3" id="section11FaqAccordion">
+                            <?php foreach ($faqList as $idx => $faq): ?>
+                                <?php
+                                    $itemNum = $idx + 1;
+                                    $headingId = "s11FaqHeading{$itemNum}";
+                                    $collapseId = "s11FaqCollapse{$itemNum}";
+                                ?>
+                                <div class="accordion-item rounded-4 overflow-hidden border bg-white" style="border-color: #e2e6de !important;">
+                                    <h3 class="accordion-header" id="<?php echo $headingId; ?>">
+                                        <button class="accordion-button collapsed fw-semibold py-3 px-3 px-sm-4 text-start"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#<?php echo $collapseId; ?>"
+                                                aria-expanded="false"
+                                                aria-controls="<?php echo $collapseId; ?>"
+                                                style="background-color: #f8f9f5; color: #0f2018; box-shadow: none;">
+                                            <?php echo htmlspecialchars($faq['q'], ENT_QUOTES, 'UTF-8'); ?>
+                                        </button>
+                                    </h3>
+                                    <div id="<?php echo $collapseId; ?>"
+                                        class="accordion-collapse collapse"
+                                        aria-labelledby="<?php echo $headingId; ?>"
+                                        data-bs-parent="#section11FaqAccordion">
+                                        <div class="accordion-body px-3 px-sm-4 pb-3 pb-sm-4 pt-2 small" style="color: #56685e; line-height: 1.65;">
+                                            <?php echo htmlspecialchars($faq['a'], ENT_QUOTES, 'UTF-8'); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
 
             </div>
-
-        </div>
-    </section>
-<?php 
+        </section>
+    </main>
+    <?php
 }
 require_once 'includes/footer.php'; 
 ?>
