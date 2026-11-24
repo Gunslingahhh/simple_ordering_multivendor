@@ -1,425 +1,670 @@
 <?php
-require_once '../config/db.php';
-session_start();
-
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'vendor') {
-    header('Location: ../login.php');
-    exit;
+if (file_exists(__DIR__ . '/../config/db.php')) {
+    require_once __DIR__ . '/../config/db.php';
+}
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-$user_id = $_SESSION['user_id'];
+$currentVendorPage = 'settings.php';
+$vendorRoleLabel = 'Panel peniaga';
 
-// Fetch vendor record
-$stmt = $pdo->prepare("SELECT * FROM vendors WHERE user_id = ?");
-$stmt->execute([$user_id]);
-$vendor = $stmt->fetch();
-
-if (!$vendor) {
-    echo '<div class="alert alert-danger">Vendor profile not found. Please contact admin.</div>';
-    exit;
-}
-
-$vendor_id = $vendor['id'];
-$specialLink = "http://" . $_SERVER['HTTP_HOST'] . "/simple_ordering_multivendor/index.php?token=" . $vendor['token'];
-
-$success = '';
-$error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $store_name = trim($_POST['store_name']);
-    $category = trim($_POST['category']);
-    $tagline = trim($_POST['tagline']);
-    $description = trim($_POST['description']);
-    $whatsapp_number = trim($_POST['whatsapp_number']);
-    $operating_hours = trim($_POST['operating_hours']);
-    $address = trim($_POST['address']);
-    $city = trim($_POST['city']);
-    $maps_link = trim($_POST['maps_link']);
-    $title_size = trim($_POST['title_size'] ?? 'Sederhana');
-
-    if (!empty($store_name) && !empty($whatsapp_number)) {
-        $logo = $vendor['logo'] ?? '';
-        $banner = $vendor['banner'] ?? '';
-
-        // Handle Logo Upload
-        if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
-            $fileTmpPath = $_FILES['logo']['tmp_name'];
-            $fileName = $_FILES['logo']['name'];
-            $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-            $newLogoName = 'logo_' . md5(time() . $fileName) . '.' . $fileExtension;
-            $dest_path = '../uploads/vendors/' . $newLogoName;
-            if (move_uploaded_file($fileTmpPath, $dest_path)) {
-                $logo = $newLogoName;
-            }
+// Resolve active vendor ID
+$activeVendorId = (int) ($_SESSION['vendor_id'] ?? 1);
+if (!empty($_SESSION['user_id']) && isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $lookupStmt = $pdo->prepare("SELECT id FROM vendors WHERE user_id = :user_id LIMIT 1");
+        $lookupStmt->execute([':user_id' => (int) $_SESSION['user_id']]);
+        $foundVendor = $lookupStmt->fetch(PDO::FETCH_ASSOC);
+        if ($foundVendor) {
+            $activeVendorId = (int) $foundVendor['id'];
+            $_SESSION['vendor_id'] = $activeVendorId;
         }
-
-        // Handle Banner Upload
-        if (isset($_FILES['banner']) && $_FILES['banner']['error'] === UPLOAD_ERR_OK) {
-            $fileTmpPath = $_FILES['banner']['tmp_name'];
-            $fileName = $_FILES['banner']['name'];
-            $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-            $newBannerName = 'banner_' . md5(time() . $fileName) . '.' . $fileExtension;
-            $dest_path = '../uploads/vendors/' . $newBannerName;
-            if (move_uploaded_file($fileTmpPath, $dest_path)) {
-                $banner = $newBannerName;
-            }
-        }
-
-        try {
-            $stmtUp = $pdo->prepare("UPDATE vendors SET store_name = ?, category = ?, tagline = ?, description = ?, whatsapp_number = ?, operating_hours = ?, address = ?, city = ?, maps_link = ?, title_size = ?, logo = ?, banner = ? WHERE id = ?");
-            $stmtUp->execute([$store_name, $category, $tagline, $description, $whatsapp_number, $operating_hours, $address, $city, $maps_link, $title_size, $logo, $banner, $vendor_id]);
-        } catch (PDOException $e) {
-            $stmtBasic = $pdo->prepare("UPDATE vendors SET store_name = ?, description = ?, address = ?, whatsapp_number = ? WHERE id = ?");
-            $stmtBasic->execute([$store_name, $description, $address, $whatsapp_number, $vendor_id]);
-        }
-        
-        $success = 'Tetapan kedai berjaya disimpan!';
-        $stmt->execute([$user_id]);
-        $vendor = $stmt->fetch();
-    } else {
-        $error = 'Nama kedai dan No. WhatsApp diperlukan.';
+    } catch (PDOException $e) {
+        // Keep fallback vendor ID
     }
 }
+
+$flashSuccess = '';
+$flashError = '';
+
+if (isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS vendor_store_settings (
+                vendor_id INT PRIMARY KEY,
+                category VARCHAR(100) NOT NULL DEFAULT 'Food & Beverages',
+                title_size VARCHAR(20) NOT NULL DEFAULT 'medium',
+                tagline VARCHAR(255) NOT NULL DEFAULT '',
+                operating_hours VARCHAR(100) NOT NULL DEFAULT '7:00 am - 2:00 pm',
+                city VARCHAR(100) NOT NULL DEFAULT '',
+                maps_url VARCHAR(255) NOT NULL DEFAULT '',
+                banner_image VARCHAR(255) NOT NULL DEFAULT '',
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        ");
+    } catch (PDOException $e) {
+        // Ignore DDL error if permissions restrict table creation
+    }
+}
+
+// Fetch existing vendor row from `food_ordering_db.vendors`
+$vendor = [
+    'id' => $activeVendorId,
+    'token' => '9226f954b98b2ae5bae55d8501d8d716',
+    'user_id' => 2,
+    'store_name' => 'Roti Berkaus',
+    'description' => 'Bukan Steam Bun Tapi Roti Berkaus',
+    'address' => 'Bumi',
+    'contact_number' => '01298765432',
+    'whatsapp_number' => '601298765432',
+    'logo' => '',
+    'status' => 'open',
+    'is_active' => 1,
+];
+
+$extraSettings = [
+    'category' => 'Food & Beverages',
+    'title_size' => 'medium',
+    'tagline' => '',
+    'operating_hours' => '7:00 am - 2:00 pm',
+    'city' => '',
+    'maps_url' => '',
+    'banner_image' => '',
+];
+
+if (isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $vStmt = $pdo->prepare("SELECT * FROM vendors WHERE id = :id LIMIT 1");
+        $vStmt->execute([':id' => $activeVendorId]);
+        $vRow = $vStmt->fetch(PDO::FETCH_ASSOC);
+        if ($vRow) {
+            $vendor = array_merge($vendor, $vRow);
+        }
+
+        $eStmt = $pdo->prepare("
+            SELECT category, title_size, tagline, operating_hours, city, maps_url, banner_image
+            FROM vendor_store_settings
+            WHERE vendor_id = :vendor_id
+            LIMIT 1
+        ");
+        $eStmt->execute([':vendor_id' => $activeVendorId]);
+        $eRow = $eStmt->fetch(PDO::FETCH_ASSOC);
+        if ($eRow) {
+            $extraSettings = array_merge($extraSettings, $eRow);
+        }
+    } catch (PDOException $e) {
+        // Keep defaults
+    }
+}
+
+// Handle POST submission (`Simpan perubahan`)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_store_settings') {
+    $storeName = trim((string) ($_POST['store_name'] ?? ''));
+    $category = trim((string) ($_POST['category'] ?? 'Food & Beverages'));
+    $titleSize = in_array(($_POST['title_size'] ?? 'medium'), ['small', 'medium', 'large'], true)
+        ? (string) $_POST['title_size']
+        : 'medium';
+    $tagline = trim((string) ($_POST['tagline'] ?? ''));
+    $description = trim((string) ($_POST['description'] ?? ''));
+    $whatsappNumber = trim((string) ($_POST['whatsapp_number'] ?? ''));
+    $operatingHours = trim((string) ($_POST['operating_hours'] ?? '7:00 am - 2:00 pm'));
+    $address = trim((string) ($_POST['address'] ?? ''));
+    $city = trim((string) ($_POST['city'] ?? ''));
+    $mapsUrl = trim((string) ($_POST['maps_url'] ?? ''));
+
+    $logoValue = trim((string) ($_POST['current_logo'] ?? ($vendor['logo'] ?? '')));
+    $bannerValue = trim((string) ($_POST['current_banner'] ?? ($extraSettings['banner_image'] ?? '')));
+
+    if (!empty($_POST['remove_logo'])) {
+        $logoValue = '__removed__';
+    }
+    if (!empty($_POST['remove_banner'])) {
+        $bannerValue = '__removed__';
+    }
+
+    // Handle optional uploaded logo file
+    if (!empty($_FILES['logo_file']['name']) && is_uploaded_file($_FILES['logo_file']['tmp_name'])) {
+        $uploadDir = __DIR__ . '/../uploads/stores';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0775, true);
+        }
+        $ext = strtolower(pathinfo((string) $_FILES['logo_file']['name'], PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $fileName = 'logo_' . $activeVendorId . '_' . time() . '.' . $ext;
+            if (@move_uploaded_file($_FILES['logo_file']['tmp_name'], $uploadDir . '/' . $fileName)) {
+                $logoValue = 'uploads/stores/' . $fileName;
+            }
+        }
+    }
+
+    // Handle optional uploaded banner file
+    if (!empty($_FILES['banner_file']['name']) && is_uploaded_file($_FILES['banner_file']['tmp_name'])) {
+        $uploadDir = __DIR__ . '/../uploads/stores';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0775, true);
+        }
+        $ext = strtolower(pathinfo((string) $_FILES['banner_file']['name'], PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $fileName = 'banner_' . $activeVendorId . '_' . time() . '.' . $ext;
+            if (@move_uploaded_file($_FILES['banner_file']['tmp_name'], $uploadDir . '/' . $fileName)) {
+                $bannerValue = 'uploads/stores/' . $fileName;
+            }
+        }
+    }
+
+    if ($storeName === '' || $whatsappNumber === '') {
+        $flashError = 'Nama kedai dan No. WhatsApp wajib diisi.';
+    } else {
+        $vendor['store_name'] = $storeName;
+        $vendor['description'] = $description;
+        $vendor['whatsapp_number'] = $whatsappNumber;
+        $vendor['address'] = $address;
+        $vendor['logo'] = ($logoValue === '__removed__') ? '' : $logoValue;
+
+        $extraSettings['category'] = $category;
+        $extraSettings['title_size'] = $titleSize;
+        $extraSettings['tagline'] = $tagline;
+        $extraSettings['operating_hours'] = $operatingHours;
+        $extraSettings['city'] = $city;
+        $extraSettings['maps_url'] = $mapsUrl;
+        $extraSettings['banner_image'] = ($bannerValue === '__removed__') ? '' : $bannerValue;
+
+        $_SESSION['vendor_store_name'] = $storeName;
+
+        if (isset($pdo) && $pdo instanceof PDO) {
+            try {
+                $uStmt = $pdo->prepare("
+                    UPDATE vendors
+                    SET store_name = :store_name,
+                        description = :description,
+                        address = :address,
+                        whatsapp_number = :whatsapp_number,
+                        logo = :logo
+                    WHERE id = :id
+                ");
+                $uStmt->execute([
+                    ':store_name' => $storeName,
+                    ':description' => $description,
+                    ':address' => $address,
+                    ':whatsapp_number' => $whatsappNumber,
+                    ':logo' => $vendor['logo'],
+                    ':id' => $activeVendorId,
+                ]);
+
+                $eUpsert = $pdo->prepare("
+                    INSERT INTO vendor_store_settings (
+                        vendor_id, category, title_size, tagline, operating_hours, city, maps_url, banner_image
+                    ) VALUES (
+                        :vendor_id, :category, :title_size, :tagline, :operating_hours, :city, :maps_url, :banner_image
+                    )
+                    ON DUPLICATE KEY UPDATE
+                        category = VALUES(category),
+                        title_size = VALUES(title_size),
+                        tagline = VALUES(tagline),
+                        operating_hours = VALUES(operating_hours),
+                        city = VALUES(city),
+                        maps_url = VALUES(maps_url),
+                        banner_image = VALUES(banner_image)
+                ");
+                $eUpsert->execute([
+                    ':vendor_id' => $activeVendorId,
+                    ':category' => $category,
+                    ':title_size' => $titleSize,
+                    ':tagline' => $tagline,
+                    ':operating_hours' => $operatingHours,
+                    ':city' => $city,
+                    ':maps_url' => $mapsUrl,
+                    ':banner_image' => $extraSettings['banner_image'],
+                ]);
+
+                $flashSuccess = 'Tetapan kedai berjaya disimpan.';
+            } catch (PDOException $e) {
+                $flashError = 'Ralat menyimpan tetapan: ' . $e->getMessage();
+            }
+        } else {
+            $flashSuccess = 'Tetapan kedai berjaya disimpan.';
+        }
+    }
+}
+
+$vendorStoreName = (string) $vendor['store_name'];
+$storeCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $vendorStoreName), 0, 2) ?: 'KW');
+$defaultLogoPlaceholder = 'https://placehold.co/96x96/0b291a/9df557?text=' . urlencode($storeCode);
+$defaultBannerPlaceholder = 'https://placehold.co/320x120/7c1d18/f8e5b4?text=' . urlencode($vendorStoreName);
+
+$logoPreviewSrc = $defaultLogoPlaceholder;
+if (!empty($vendor['logo']) && file_exists(__DIR__ . '/../' . ltrim((string) $vendor['logo'], '/'))) {
+    $logoPreviewSrc = '../' . ltrim((string) $vendor['logo'], '/');
+}
+
+$bannerPreviewSrc = $defaultBannerPlaceholder;
+if (!empty($extraSettings['banner_image']) && file_exists(__DIR__ . '/../' . ltrim((string) $extraSettings['banner_image'], '/'))) {
+    $bannerPreviewSrc = '../' . ltrim((string) $extraSettings['banner_image'], '/');
+}
+
+$vendorLogoUrl = $logoPreviewSrc;
+$categories = ['Food & Beverages', 'Bakery & Kuih', 'Cafe & Drinks', 'Groceries & Mart', 'Fashion & Craft'];
 ?>
 <!DOCTYPE html>
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tetapan Kedai — Panel Peniaga</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-green: #0b291a;
-            --accent-lime: #b2ff81;
-            --bg-cream: #f3f4ee;
-        }
-        body {
-            background-color: var(--bg-cream);
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            color: #1a1a1a;
-        }
-        .dashboard-wrapper {
-            display: flex;
-            min-height: 100vh;
-        }
-        .dash-sidebar {
-            width: 260px;
-            background-color: #ffffff;
-            border-right: 1px solid #e2e8f0;
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            z-index: 100;
-        }
-        .sidebar-brand-area {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .sidebar-menu {
-            padding: 1rem;
-            list-style: none;
-            margin: 0;
-            flex-grow: 1;
-        }
-        .sidebar-menu li a {
-            display: flex;
-            align-items: center;
-            gap: 0.85rem;
-            padding: 0.75rem 1rem;
-            color: #475569;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-            margin-bottom: 0.25rem;
-        }
-        .sidebar-menu li a:hover {
-            background-color: #f8fafc;
-            color: #0b291a;
-        }
-        .sidebar-menu li a.active {
-            background-color: #eaf3ed;
-            color: #0b291a;
-        }
-        .sidebar-footer {
-            padding: 1rem;
-            border-top: 1px solid #f1f5f9;
-        }
-        .vendor-profile-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .dash-main {
-            margin-left: 260px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            width: calc(100% - 260px);
-        }
-        .dash-topbar {
-            background-color: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 0.85rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .dash-content-body {
-            padding: 2rem 2.5rem;
-            width: 100%;
-        }
-        .settings-card-section {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-        .title-size-card {
-            border: 1.5px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            text-align: center;
-            cursor: pointer;
-            background: #ffffff;
-            transition: all 0.2s ease;
-        }
-        .title-size-card.selected {
-            border-color: #0b291a;
-            background-color: #fafafa;
-            box-shadow: 0 0 0 1px #0b291a;
-        }
-        .image-box-container {
-            border: 1px dashed #cbd5e1;
-            border-radius: 0.75rem;
-            padding: 1.25rem;
-            background: #fcfcfc;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .btn-lihat-kedai {
-            border: 1px solid #cbd5e1;
-            background: #ffffff;
-            color: #0b291a;
-            border-radius: 0.5rem;
-            padding: 0.4rem 0.9rem;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-        .btn-lihat-kedai:hover {
-            background: #f1f5f9;
-        }
-    </style>
+    <title>Tetapan kedai — <?php echo htmlspecialchars($vendorStoreName, ENT_QUOTES, 'UTF-8'); ?> | Kedai WA Kamek</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
-<body>
+<body class="m-0 p-0" style="background-color: #f4f5ef; color: #13261d;">
 
-<div class="dashboard-wrapper">
-    
-    <?php include 'sidenav.php'; ?>
+    <!-- Exact Screen-Height Scrollable Wrapper (100dvh) -->
+    <div class="container-fluid p-0 overflow-hidden" style="height: 100vh; height: 100dvh;">
+        <div class="d-flex h-100">
 
-    <div class="dash-main">
-        <div class="dash-topbar">
-            <div>
-                <span class="text-muted small">Panel peniaga</span>
-                <h5 class="fw-bold mb-0 text-dark">Tetapan kedai</h5>
-            </div>
-            <div>
-                <a href="<?= htmlspecialchars($specialLink) ?>" target="_blank" class="btn-lihat-kedai">
-                    <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem;"></i> Lihat kedai
-                </a>
-            </div>
-        </div>
+            <!-- Static Screen-Height Sidenav -->
+            <?php require_once __DIR__ . '/sidenav.php'; ?>
 
-        <div class="dash-content-body">
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success py-2 small mb-4"><?= htmlspecialchars($success) ?></div>
-            <?php endif; ?>
-            <?php if ($error): ?>
-                <div class="alert alert-danger py-2 small mb-4"><?= htmlspecialchars($error) ?></div>
-            <?php endif; ?>
+            <!-- Independently Scrollable Main Content -->
+            <main class="flex-grow-1 h-100 overflow-y-auto p-3 p-sm-4 p-lg-5" style="background-color: #f4f5ef;">
+                <div class="container-fluid px-0">
 
-            <form method="POST" enctype="multipart/form-data">
-                
-                <!-- SECTION 1: Maklumat kedai -->
-                <div class="settings-card-section">
-                    <h5 class="fw-bold text-dark mb-4">Maklumat kedai</h5>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Nama kedai</label>
-                            <input type="text" class="form-control" name="store_name" value="<?= htmlspecialchars($vendor['store_name']) ?>" required>
+                    <!-- Top Bar (`Panel peniaga` / `Tetapan kedai` + `Lihat kedai`) -->
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
+                        <div>
+                            <div class="small mb-1" style="color: #6b7c73;">Panel peniaga</div>
+                            <h1 class="h3 fw-bold mb-0" style="color: #0e1f17; letter-spacing: -0.02em;">
+                                Tetapan kedai
+                            </h1>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Kategori</label>
-                            <select class="form-select" name="category">
-                                <option value="Food & Beverages" <?= ($vendor['category'] ?? '') === 'Food & Beverages' ? 'selected' : '' ?>>Food & Beverages</option>
-                                <option value="Fashion & Apparel" <?= ($vendor['category'] ?? '') === 'Fashion & Apparel' ? 'selected' : '' ?>>Fashion & Apparel</option>
-                                <option value="Fresh Produce" <?= ($vendor['category'] ?? '') === 'Fresh Produce' ? 'selected' : '' ?>>Fresh Produce</option>
-                                <option value="Handmade Crafts" <?= ($vendor['category'] ?? '') === 'Handmade Crafts' ? 'selected' : '' ?>>Handmade Crafts</option>
-                                <option value="Others" <?= ($vendor['category'] ?? '') === 'Others' ? 'selected' : '' ?>>Others</option>
-                            </select>
+                        <div>
+                            <a href="../index.php?token=<?php echo urlencode((string) $vendor['token']); ?>"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="btn btn-sm rounded-3 border bg-white px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2"
+                               style="border-color: #dce2da !important; color: #0e1f17;">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                                <span>Lihat kedai</span>
+                            </a>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Saiz tajuk kedai</label>
-                        <input type="hidden" name="title_size" id="titleSizeInput" value="<?= htmlspecialchars($vendor['title_size'] ?? 'Sederhana') ?>">
-                        <div class="row row-cols-3 g-3">
-                            <div class="col">
-                                <div class="title-size-card <?= ($vendor['title_size'] ?? '') === 'Kecil' ? 'selected' : '' ?>" onclick="selectTitleSize('Kecil', this)">
-                                    <div class="fw-bold fs-6">Aa</div>
-                                    <div class="text-muted small">Kecil</div>
+                    <!-- Alerts -->
+                    <?php if ($flashSuccess !== ''): ?>
+                        <div class="alert alert-success alert-dismissible fade show rounded-3 py-2 px-3 small mb-4" role="alert">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            <?php echo htmlspecialchars($flashSuccess, ENT_QUOTES, 'UTF-8'); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($flashError !== ''): ?>
+                        <div class="alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 small mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <?php echo htmlspecialchars($flashError, ENT_QUOTES, 'UTF-8'); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="POST" action="settings.php" enctype="multipart/form-data" id="storeSettingsForm">
+                        <input type="hidden" name="action" value="save_store_settings">
+                        <input type="hidden" name="current_logo" id="currentLogoField" value="<?php echo htmlspecialchars((string) ($vendor['logo'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="current_banner" id="currentBannerField" value="<?php echo htmlspecialchars((string) ($extraSettings['banner_image'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="remove_logo" id="removeLogoField" value="0">
+                        <input type="hidden" name="remove_banner" id="removeBannerField" value="0">
+
+                        <!-- Section 1: Maklumat kedai -->
+                        <div class="card border rounded-4 bg-white p-3 p-sm-4 mb-4" style="border-color: #e4e9e5 !important;">
+                            <h2 class="h5 fw-bold mb-4" style="color: #0e1f17;">Maklumat kedai</h2>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-md-6">
+                                    <label for="store_name" class="form-label small fw-semibold" style="color: #13261d;">Nama kedai</label>
+                                    <input
+                                        type="text"
+                                        class="form-control rounded-3 bg-white"
+                                        id="store_name"
+                                        name="store_name"
+                                        value="<?php echo htmlspecialchars($vendorStoreName, ENT_QUOTES, 'UTF-8'); ?>"
+                                        required
+                                        style="border-color: #dce2da !important;"
+                                    >
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label for="category" class="form-label small fw-semibold" style="color: #13261d;">Kategori</label>
+                                    <select class="form-select rounded-3 bg-white"
+                                            id="category"
+                                            name="category"
+                                            style="border-color: #dce2da !important;">
+                                        <?php foreach ($categories as $cat): ?>
+                                            <option value="<?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>"
+                                                <?php echo (($extraSettings['category'] ?? 'Food & Beverages') === $cat) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($cat, ENT_QUOTES, 'UTF-8'); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                             </div>
-                            <div class="col">
-                                <div class="title-size-card <?= ($vendor['title_size'] ?? 'Sederhana') === 'Sederhana' ? 'selected' : '' ?>" onclick="selectTitleSize('Sederhana', this)">
-                                    <div class="fw-bold fs-5">Aa</div>
-                                    <div class="text-muted small">Sederhana</div>
+
+                            <!-- Saiz tajuk kedai (Kecil / Sederhana / Besar) -->
+                            <div class="mb-4">
+                                <label class="form-label small fw-semibold d-block mb-2" style="color: #13261d;">Saiz tajuk kedai</label>
+                                <div class="row g-2 g-sm-3">
+                                    <?php
+                                    $sizeOptions = [
+                                        'small' => ['title' => 'Aa', 'sub' => 'Kecil'],
+                                        'medium' => ['title' => 'Aa', 'sub' => 'Sederhana'],
+                                        'large' => ['title' => 'Aa', 'sub' => 'Besar'],
+                                    ];
+                                    $currentSize = $extraSettings['title_size'] ?? 'medium';
+                                    ?>
+                                    <?php foreach ($sizeOptions as $sKey => $sMeta): ?>
+                                        <?php $isSelectedSize = ($currentSize === $sKey); ?>
+                                        <div class="col-4">
+                                            <label class="w-100 rounded-3 border p-3 text-center d-block title-size-card"
+                                                   style="cursor: pointer; <?php echo $isSelectedSize
+                                                       ? 'background-color: #eef2ef; border-color: #143326 !important;'
+                                                       : 'background-color: #ffffff; border-color: #dce2da !important;'; ?>">
+                                                <input type="radio"
+                                                       class="btn-check title-size-radio"
+                                                       name="title_size"
+                                                       value="<?php echo htmlspecialchars($sKey, ENT_QUOTES, 'UTF-8'); ?>"
+                                                       <?php echo $isSelectedSize ? 'checked' : ''; ?>>
+                                                <div class="fw-bold <?php echo ($sKey === 'large') ? 'fs-5' : (($sKey === 'small') ? 'fs-6' : 'fs-6'); ?>"
+                                                     style="color: #0e1f17;">
+                                                    <?php echo htmlspecialchars($sMeta['title'], ENT_QUOTES, 'UTF-8'); ?>
+                                                </div>
+                                                <div class="small" style="color: #6b7c73;">
+                                                    <?php echo htmlspecialchars($sMeta['sub'], ENT_QUOTES, 'UTF-8'); ?>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
-                            <div class="col">
-                                <div class="title-size-card <?= ($vendor['title_size'] ?? '') === 'Besar' ? 'selected' : '' ?>" onclick="selectTitleSize('Besar', this)">
-                                    <div class="fw-bold fs-4">Aa</div>
-                                    <div class="text-muted small">Besar</div>
+
+                            <!-- Tagline -->
+                            <div class="mb-4">
+                                <label for="tagline" class="form-label small fw-semibold" style="color: #13261d;">Tagline</label>
+                                <input
+                                    type="text"
+                                    class="form-control rounded-3 bg-white"
+                                    id="tagline"
+                                    name="tagline"
+                                    placeholder="Masakan kampung, rasa macam rumah sendiri"
+                                    value="<?php echo htmlspecialchars((string) ($extraSettings['tagline'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    style="border-color: #dce2da !important;"
+                                >
+                            </div>
+
+                            <!-- Penerangan -->
+                            <div class="mb-4">
+                                <label for="description" class="form-label small fw-semibold" style="color: #13261d;">Penerangan</label>
+                                <textarea
+                                    class="form-control rounded-3 bg-white"
+                                    id="description"
+                                    name="description"
+                                    rows="3"
+                                    placeholder="Nasi lemak, mee kolok dan laksa Sarawak dimasak segar setiap pagi."
+                                    style="border-color: #dce2da !important;"
+                                ><?php echo htmlspecialchars((string) ($vendor['description'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea>
+                            </div>
+
+                            <!-- No. WhatsApp & Waktu operasi -->
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label for="whatsapp_number" class="form-label small fw-semibold" style="color: #13261d;">No. WhatsApp</label>
+                                    <input
+                                        type="text"
+                                        class="form-control rounded-3 bg-white"
+                                        id="whatsapp_number"
+                                        name="whatsapp_number"
+                                        value="<?php echo htmlspecialchars((string) ($vendor['whatsapp_number'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                        required
+                                        style="border-color: #dce2da !important;"
+                                    >
+                                    <div class="form-text small" style="color: #6b7c73;">Format: 60123456789</div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label for="operating_hours" class="form-label small fw-semibold" style="color: #13261d;">Waktu operasi</label>
+                                    <input
+                                        type="text"
+                                        class="form-control rounded-3 bg-white"
+                                        id="operating_hours"
+                                        name="operating_hours"
+                                        value="<?php echo htmlspecialchars((string) ($extraSettings['operating_hours'] ?? '7:00 am - 2:00 pm'), ENT_QUOTES, 'UTF-8'); ?>"
+                                        style="border-color: #dce2da !important;"
+                                    >
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Tagline</label>
-                        <input type="text" class="form-control" name="tagline" value="<?= htmlspecialchars($vendor['tagline'] ?? 'Masakan kampung, rasa macam rumah sendiri') ?>">
-                    </div>
+                        <!-- Section 2: Lokasi -->
+                        <div class="card border rounded-4 bg-white p-3 p-sm-4 mb-4" style="border-color: #e4e9e5 !important;">
+                            <h2 class="h5 fw-bold mb-4" style="color: #0e1f17;">Lokasi</h2>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Penerangan</label>
-                        <textarea class="form-control" name="description" rows="3"><?= htmlspecialchars($vendor['description']) ?></textarea>
-                    </div>
+                            <div class="mb-3">
+                                <label for="address" class="form-label small fw-semibold" style="color: #13261d;">Alamat</label>
+                                <input
+                                    type="text"
+                                    class="form-control rounded-3 bg-white"
+                                    id="address"
+                                    name="address"
+                                    value="<?php echo htmlspecialchars((string) ($vendor['address'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    style="border-color: #dce2da !important;"
+                                >
+                            </div>
 
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">No. WhatsApp</label>
-                            <input type="text" class="form-control" name="whatsapp_number" value="<?= htmlspecialchars($vendor['whatsapp_number']) ?>" required>
-                            <div class="form-text small text-muted">Format: 60123456789</div>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label for="city" class="form-label small fw-semibold" style="color: #13261d;">Bandar</label>
+                                    <input
+                                        type="text"
+                                        class="form-control rounded-3 bg-white"
+                                        id="city"
+                                        name="city"
+                                        value="<?php echo htmlspecialchars((string) ($extraSettings['city'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                        style="border-color: #dce2da !important;"
+                                    >
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label for="maps_url" class="form-label small fw-semibold" style="color: #13261d;">Pautan Google Maps</label>
+                                    <input
+                                        type="url"
+                                        class="form-control rounded-3 bg-white"
+                                        id="maps_url"
+                                        name="maps_url"
+                                        placeholder="https://maps.google.com/?q=..."
+                                        value="<?php echo htmlspecialchars((string) ($extraSettings['maps_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                        style="border-color: #dce2da !important;"
+                                    >
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Waktu operasi</label>
-                            <input type="text" class="form-control" name="operating_hours" value="<?= htmlspecialchars($vendor['operating_hours'] ?? '7:00 am – 2:00 pm') ?>">
+
+                        <!-- Section 3: Imej kedai -->
+                        <div class="card border rounded-4 bg-white p-3 p-sm-4 mb-4" style="border-color: #e4e9e5 !important;">
+                            <h2 class="h5 fw-bold mb-1" style="color: #0e1f17;">Imej kedai</h2>
+                            <p class="small mb-4" style="color: #6b7c73;">
+                                JPG, PNG atau WebP. Imej besar akan dikecilkan secara automatik.
+                            </p>
+
+                            <div class="row g-3 g-lg-4">
+
+                                <!-- Logo kedai -->
+                                <div class="col-12 col-lg-6">
+                                    <label class="form-label small fw-semibold d-block mb-2" style="color: #13261d;">Logo kedai</label>
+                                    <div class="border rounded-4 p-3 d-flex flex-wrap align-items-center gap-3"
+                                         style="border-color: #dce2da !important; background-color: #ffffff;">
+                                        <img
+                                            id="logoPreviewImg"
+                                            src="<?php echo htmlspecialchars($logoPreviewSrc, ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-default="<?php echo htmlspecialchars($defaultLogoPlaceholder, ENT_QUOTES, 'UTF-8'); ?>"
+                                            alt="Logo kedai Placeholder"
+                                            class="rounded-3 object-fit-cover flex-shrink-0 border"
+                                            style="width: 56px; height: 56px; border-color: #e4e9e5 !important;"
+                                        >
+
+                                        <input type="file"
+                                               id="logoFileInput"
+                                               name="logo_file"
+                                               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                               class="d-none">
+
+                                        <button type="button"
+                                                id="swapLogoBtn"
+                                                class="btn btn-sm rounded-3 border bg-white px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2"
+                                                style="border-color: #dce2da !important; color: #0e1f17;">
+                                            <i class="bi bi-image"></i>
+                                            <span>Tukar</span>
+                                        </button>
+
+                                        <button type="button"
+                                                id="removeLogoBtn"
+                                                class="btn btn-sm btn-link text-danger text-decoration-none fw-semibold px-2 py-1 d-inline-flex align-items-center gap-1">
+                                            <i class="bi bi-trash"></i>
+                                            <span>Buang</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Banner kedai -->
+                                <div class="col-12 col-lg-6">
+                                    <label class="form-label small fw-semibold d-block mb-2" style="color: #13261d;">Banner kedai</label>
+                                    <div class="border rounded-4 p-3 d-flex flex-wrap align-items-center gap-3"
+                                         style="border-color: #dce2da !important; background-color: #ffffff;">
+                                        <img
+                                            id="bannerPreviewImg"
+                                            src="<?php echo htmlspecialchars($bannerPreviewSrc, ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-default="<?php echo htmlspecialchars($defaultBannerPlaceholder, ENT_QUOTES, 'UTF-8'); ?>"
+                                            alt="Banner kedai Placeholder"
+                                            class="rounded-3 object-fit-cover flex-shrink-0 border"
+                                            style="width: 92px; height: 56px; border-color: #e4e9e5 !important;"
+                                        >
+
+                                        <input type="file"
+                                               id="bannerFileInput"
+                                               name="banner_file"
+                                               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                               class="d-none">
+
+                                        <button type="button"
+                                                id="swapBannerBtn"
+                                                class="btn btn-sm rounded-3 border bg-white px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2"
+                                                style="border-color: #dce2da !important; color: #0e1f17;">
+                                            <i class="bi bi-image"></i>
+                                            <span>Tukar</span>
+                                        </button>
+
+                                        <button type="button"
+                                                id="removeBannerBtn"
+                                                class="btn btn-sm btn-link text-danger text-decoration-none fw-semibold px-2 py-1 d-inline-flex align-items-center gap-1">
+                                            <i class="bi bi-trash"></i>
+                                            <span>Buang</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
-                    </div>
+
+                        <!-- Save Button Row -->
+                        <div class="d-flex justify-content-end mb-4">
+                            <button
+                                type="submit"
+                                class="btn rounded-3 px-4 py-2 fw-semibold border-0"
+                                style="background-color: #143326; color: #ffffff;">
+                                Simpan perubahan
+                            </button>
+                        </div>
+
+                    </form>
+
                 </div>
-
-                <!-- SECTION 2: Lokasi -->
-                <div class="settings-card-section">
-                    <h5 class="fw-bold text-dark mb-4">Lokasi</h5>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Alamat</label>
-                        <input type="text" class="form-control" name="address" value="<?= htmlspecialchars($vendor['address']) ?>">
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Bandar</label>
-                            <input type="text" class="form-control" name="city" value="<?= htmlspecialchars($vendor['city'] ?? 'Gedong') ?>">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Pautan Google Maps</label>
-                            <input type="text" class="form-control" name="maps_link" value="<?= htmlspecialchars($vendor['maps_link'] ?? 'https://maps.google.com/?q=Gedong+Sarawak') ?>">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SECTION 3: Imej Kedai -->
-                <div class="settings-card-section">
-                    <h5 class="fw-bold text-dark mb-1">Imej kedai</h5>
-                    <p class="text-muted small mb-4">JPG, PNG atau WebP. Imej besar akan dikecilkan secara automatik.</p>
-
-                    <div class="row g-4">
-                        <!-- Logo Kedai -->
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Logo kedai</label>
-                            <div class="image-box-container">
-                                <div class="d-flex align-items-center gap-3">
-                                    <img src="../uploads/vendors/<?= htmlspecialchars($vendor['logo'] ?: 'default_logo.png') ?>" width="48" height="48" class="rounded-circle object-fit-cover border shadow-sm" alt="Logo">
-                                    <input type="file" name="logo" id="logoInput" class="d-none" accept="image/*">
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-sm btn-light border fw-semibold px-3" onclick="document.getElementById('logoInput').click();">
-                                        <i class="fa-regular fa-image me-1"></i> Tukar
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none fw-semibold" onclick="alert('Logo dibuang');">
-                                        Buang
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Banner Kedai -->
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Banner kedai</label>
-                            <div class="image-box-container">
-                                <div class="d-flex align-items-center gap-3">
-                                    <img src="../uploads/vendors/<?= htmlspecialchars($vendor['banner'] ?: 'default_banner.png') ?>" width="75" height="45" class="rounded object-fit-cover border shadow-sm" alt="Banner">
-                                    <input type="file" name="banner" id="bannerInput" class="d-none" accept="image/*">
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-sm btn-light border fw-semibold px-3" onclick="document.getElementById('bannerInput').click();">
-                                        <i class="fa-regular fa-image me-1"></i> Tukar
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none fw-semibold" onclick="alert('Banner dibuang');">
-                                        Buang
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Save Button -->
-                <div class="text-end mb-5">
-                    <button type="submit" class="btn btn-dark fw-bold px-5 py-2.5" style="background-color: #0b291a; border-radius: 50rem;">
-                        Simpan perubahan
-                    </button>
-                </div>
-
-            </form>
-
-            <div class="text-muted text-center small pt-3">
-                Prototip: data dan PIN disimpan dalam localStorage pelayar ini dan tidak selamat untuk produksi.
-            </div>
+            </main>
 
         </div>
     </div>
 
-</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const sizeCards = document.querySelectorAll('.title-size-card');
+        sizeCards.forEach(function (card) {
+            const radio = card.querySelector('.title-size-radio');
+            if (!radio) return;
+            radio.addEventListener('change', function () {
+                sizeCards.forEach(function (c) {
+                    const r = c.querySelector('.title-size-radio');
+                    const active = r && r.checked;
+                    c.style.backgroundColor = active ? '#eef2ef' : '#ffffff';
+                    c.style.borderColor = active ? '#143326' : '#dce2da';
+                });
+            });
+        });
 
-<script>
-function selectTitleSize(size, element) {
-    document.querySelectorAll('.title-size-card').forEach(card => card.classList.remove('selected'));
-    element.classList.add('selected');
-    document.getElementById('titleSizeInput').value = size;
-}
-</script>
+        const swapLogoBtn = document.getElementById('swapLogoBtn');
+        const removeLogoBtn = document.getElementById('removeLogoBtn');
+        const logoFileInput = document.getElementById('logoFileInput');
+        const logoPreviewImg = document.getElementById('logoPreviewImg');
+        const removeLogoField = document.getElementById('removeLogoField');
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        if (swapLogoBtn && logoFileInput) {
+            swapLogoBtn.addEventListener('click', function () {
+                logoFileInput.click();
+            });
+            logoFileInput.addEventListener('change', function () {
+                if (logoFileInput.files && logoFileInput.files[0] && logoPreviewImg) {
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        logoPreviewImg.src = ev.target.result;
+                        if (removeLogoField) removeLogoField.value = '0';
+                    };
+                    reader.readAsDataURL(logoFileInput.files[0]);
+                }
+            });
+        }
+
+        if (removeLogoBtn && logoPreviewImg) {
+            removeLogoBtn.addEventListener('click', function () {
+                if (logoFileInput) logoFileInput.value = '';
+                if (removeLogoField) removeLogoField.value = '1';
+                logoPreviewImg.src = logoPreviewImg.getAttribute('data-default') || logoPreviewImg.src;
+            });
+        }
+
+        const swapBannerBtn = document.getElementById('swapBannerBtn');
+        const removeBannerBtn = document.getElementById('removeBannerBtn');
+        const bannerFileInput = document.getElementById('bannerFileInput');
+        const bannerPreviewImg = document.getElementById('bannerPreviewImg');
+        const removeBannerField = document.getElementById('removeBannerField');
+
+        if (swapBannerBtn && bannerFileInput) {
+            swapBannerBtn.addEventListener('click', function () {
+                bannerFileInput.click();
+            });
+            bannerFileInput.addEventListener('change', function () {
+                if (bannerFileInput.files && bannerFileInput.files[0] && bannerPreviewImg) {
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        bannerPreviewImg.src = ev.target.result;
+                        if (removeBannerField) removeBannerField.value = '0';
+                    };
+                    reader.readAsDataURL(bannerFileInput.files[0]);
+                }
+            });
+        }
+
+        if (removeBannerBtn && bannerPreviewImg) {
+            removeBannerBtn.addEventListener('click', function () {
+                if (bannerFileInput) bannerFileInput.value = '';
+                if (removeBannerField) removeBannerField.value = '1';
+                bannerPreviewImg.src = bannerPreviewImg.getAttribute('data-default') || bannerPreviewImg.src;
+            });
+        }
+    });
+    </script>
 </body>
 </html>

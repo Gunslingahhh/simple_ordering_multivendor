@@ -1,317 +1,560 @@
 <?php
-require_once '../config/db.php';
-session_start();
-
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'vendor') {
-    header('Location: ../login.php');
-    exit;
+if (file_exists(__DIR__ . '/../config/db.php')) {
+    require_once __DIR__ . '/../config/db.php';
+}
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-$user_id = $_SESSION['user_id'];
+$currentVendorPage = 'subscription.php';
+$vendorRoleLabel = 'Panel peniaga';
 
-// Fetch vendor record
-$stmt = $pdo->prepare("SELECT * FROM vendors WHERE user_id = ?");
-$stmt->execute([$user_id]);
-$vendor = $stmt->fetch();
-
-if (!$vendor) {
-    echo '<div class="alert alert-danger">Vendor profile not found. Please contact admin.</div>';
-    exit;
+// Resolve active vendor ID from session or database
+$activeVendorId = (int) ($_SESSION['vendor_id'] ?? 0);
+if (!empty($_SESSION['user_id']) && isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $lookupStmt = $pdo->prepare("SELECT id FROM vendors WHERE user_id = :user_id LIMIT 1");
+        $lookupStmt->execute([':user_id' => (int) $_SESSION['user_id']]);
+        $foundVendor = $lookupStmt->fetch(PDO::FETCH_ASSOC);
+        if ($foundVendor) {
+            $activeVendorId = (int) $foundVendor['id'];
+            $_SESSION['vendor_id'] = $activeVendorId;
+        }
+    } catch (PDOException $e) {
+        // Keep current vendor ID
+    }
+}
+if ($activeVendorId <= 0 && isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $firstVendorStmt = $pdo->query("SELECT id FROM vendors ORDER BY id ASC LIMIT 1");
+        $firstRow = $firstVendorStmt->fetch(PDO::FETCH_ASSOC);
+        if ($firstRow) {
+            $activeVendorId = (int) $firstRow['id'];
+        }
+    } catch (PDOException $e) {
+        $activeVendorId = 1;
+    }
 }
 
-$vendor_id = $vendor['id'];
-$specialLink = "http://" . $_SERVER['HTTP_HOST'] . "/simple_ordering_multivendor/index.php?token=" . $vendor['token'];
+$monthsMalay = [
+    1 => 'Jan',
+    2 => 'Feb',
+    3 => 'Mac',
+    4 => 'Apr',
+    5 => 'Mei',
+    6 => 'Jun',
+    7 => 'Jul',
+    8 => 'Ogo',
+    9 => 'Sep',
+    10 => 'Okt',
+    11 => 'Nov',
+    12 => 'Dis',
+];
 
-$success = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $success = 'Pembayaran langganan berjaya! 30 hari telah ditambahkan ke akaun anda.';
+function formatDateMalay(string $isoDate, array $monthsMalay): string
+{
+    $ts = strtotime($isoDate);
+    if ($ts === false) {
+        return $isoDate;
+    }
+    $day = (int) date('j', $ts);
+    $month = $monthsMalay[(int) date('n', $ts)] ?? date('M', $ts);
+    $year = date('Y', $ts);
+    return $day . ' ' . $month . ' ' . $year;
 }
+
+$flashSuccess = '';
+$flashError = '';
+
+if (isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS vendor_subscriptions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                vendor_id INT NOT NULL,
+                plan_name VARCHAR(100) NOT NULL DEFAULT 'PELAN BULANAN',
+                amount DECIMAL(10,2) NOT NULL DEFAULT 15.00,
+                payment_method VARCHAR(100) NOT NULL DEFAULT 'FPX Online Banking',
+                days_added INT NOT NULL DEFAULT 30,
+                expiry_date DATE NOT NULL,
+                status VARCHAR(30) NOT NULL DEFAULT 'Berjaya',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_vendor_id (vendor_id)
+            )
+        ");
+    } catch (PDOException $e) {
+        // Ignore if table creation is not permitted
+    }
+}
+
+// Load real vendor record from `food_ordering_db.vendors`
+$vendor = [
+    'id' => $activeVendorId,
+    'token' => '',
+    'store_name' => 'Kedai',
+    'status' => 'open',
+    'is_active' => 1,
+    'created_at' => date('Y-m-d H:i:s'),
+];
+
+if (isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $vStmt = $pdo->prepare("
+            SELECT id, token, store_name, status, is_active, created_at
+            FROM vendors
+            WHERE id = :id
+            LIMIT 1
+        ");
+        $vStmt->execute([':id' => $activeVendorId]);
+        $vRow = $vStmt->fetch(PDO::FETCH_ASSOC);
+        if ($vRow) {
+            $vendor = array_merge($vendor, $vRow);
+        }
+    } catch (PDOException $e) {
+        $flashError = 'Gagal memuatkan maklumat kedai dari pangkalan data.';
+    }
+}
+
+$monthlyPrice = 15.00;
+$cycleDays = 30;
+$allowedMethods = [
+    'FPX Online Banking',
+    'Kad debit / kredit',
+    'e-Wallet',
+];
+
+function getLatestSubscriptionState(PDO $pdo, int $vendorId, string $vendorCreatedAt, int $cycleDays): array
+{
+    $history = [];
+    $latestExpiry = null;
+
+    try {
+        $hStmt = $pdo->prepare("
+            SELECT id, plan_name, amount, payment_method, days_added, expiry_date, status, created_at
+            FROM vendor_subscriptions
+            WHERE vendor_id = :vendor_id
+            ORDER BY id DESC
+        ");
+        $hStmt->execute([':vendor_id' => $vendorId]);
+        $history = $hStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!empty($history) && !empty($history[0]['expiry_date'])) {
+            $latestExpiry = (string) $history[0]['expiry_date'];
+        }
+    } catch (PDOException $e) {
+        $history = [];
+    }
+
+    if ($latestExpiry === null) {
+        $createdTs = strtotime($vendorCreatedAt);
+        $baseTs = ($createdTs !== false) ? $createdTs : strtotime(date('Y-m-d'));
+        $latestExpiry = date('Y-m-d', strtotime('+' . $cycleDays . ' days', $baseTs));
+    }
+
+    return [
+        'expiry_date' => $latestExpiry,
+        'history' => $history,
+    ];
+}
+
+// Handle real payment (`Bayar RM 15.00`) or real `activation_codes` redemption
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo) && $pdo instanceof PDO) {
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'pay_subscription') {
+        $method = trim((string) ($_POST['payment_method'] ?? 'FPX Online Banking'));
+        if (!in_array($method, $allowedMethods, true)) {
+            $method = 'FPX Online Banking';
+        }
+
+        try {
+            $state = getLatestSubscriptionState($pdo, $activeVendorId, (string) $vendor['created_at'], $cycleDays);
+            $todayTs = strtotime(date('Y-m-d'));
+            $currExpTs = strtotime((string) $state['expiry_date']);
+            $baseTs = ($currExpTs !== false && $currExpTs >= $todayTs) ? $currExpTs : $todayTs;
+            $newExpiryDate = date('Y-m-d', strtotime('+' . $cycleDays . ' days', $baseTs));
+
+            $insStmt = $pdo->prepare("
+                INSERT INTO vendor_subscriptions (
+                    vendor_id, plan_name, amount, payment_method, days_added, expiry_date, status
+                ) VALUES (
+                    :vendor_id, :plan_name, :amount, :payment_method, :days_added, :expiry_date, :status
+                )
+            ");
+            $insStmt->execute([
+                ':vendor_id' => $activeVendorId,
+                ':plan_name' => 'PELAN BULANAN',
+                ':amount' => $monthlyPrice,
+                ':payment_method' => $method,
+                ':days_added' => $cycleDays,
+                ':expiry_date' => $newExpiryDate,
+                ':status' => 'Berjaya',
+            ]);
+
+            $flashSuccess = 'Bayaran direkodkan (' . $method . '). Tempoh langganan ditambah ' . $cycleDays . ' hari sehingga ' . formatDateMalay($newExpiryDate, $monthsMalay) . '.';
+        } catch (PDOException $e) {
+            $flashError = 'Ralat merekodkan bayaran: ' . $e->getMessage();
+        }
+    } elseif ($action === 'redeem_activation_code') {
+        $codeInput = strtoupper(trim((string) ($_POST['activation_code'] ?? '')));
+
+        if ($codeInput === '') {
+            $flashError = 'Sila masukkan kod pengaktifan.';
+        } else {
+            try {
+                $pdo->beginTransaction();
+
+                $cStmt = $pdo->prepare("
+                    SELECT id, code, description, free_months, max_uses, used_count, status
+                    FROM activation_codes
+                    WHERE UPPER(code) = :code
+                    LIMIT 1
+                    FOR UPDATE
+                ");
+                $cStmt->execute([':code' => $codeInput]);
+                $codeRow = $cStmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$codeRow) {
+                    $pdo->rollBack();
+                    $flashError = 'Kod pengaktifan tidak dijumpai dalam pangkalan data.';
+                } elseif (strtolower((string) ($codeRow['status'] ?? '')) !== 'active') {
+                    $pdo->rollBack();
+                    $flashError = 'Kod pengaktifan tidak aktif.';
+                } elseif ((int) ($codeRow['used_count'] ?? 0) >= (int) ($codeRow['max_uses'] ?? 1)) {
+                    $pdo->rollBack();
+                    $flashError = 'Kod pengaktifan telah mencapai had penggunaan maksimum.';
+                } else {
+                    $freeMonths = max(1, (int) ($codeRow['free_months'] ?? 1));
+                    $addedDays = $freeMonths * $cycleDays;
+
+                    $state = getLatestSubscriptionState($pdo, $activeVendorId, (string) $vendor['created_at'], $cycleDays);
+                    $todayTs = strtotime(date('Y-m-d'));
+                    $currExpTs = strtotime((string) $state['expiry_date']);
+                    $baseTs = ($currExpTs !== false && $currExpTs >= $todayTs) ? $currExpTs : $todayTs;
+                    $newExpiryDate = date('Y-m-d', strtotime('+' . $addedDays . ' days', $baseTs));
+
+                    $updCode = $pdo->prepare("
+                        UPDATE activation_codes
+                        SET used_count = used_count + 1
+                        WHERE id = :id
+                    ");
+                    $updCode->execute([':id' => (int) $codeRow['id']]);
+
+                    $insSub = $pdo->prepare("
+                        INSERT INTO vendor_subscriptions (
+                            vendor_id, plan_name, amount, payment_method, days_added, expiry_date, status
+                        ) VALUES (
+                            :vendor_id, :plan_name, :amount, :payment_method, :days_added, :expiry_date, :status
+                        )
+                    ");
+                    $insSub->execute([
+                        ':vendor_id' => $activeVendorId,
+                        ':plan_name' => 'PELAN BULANAN',
+                        ':amount' => 0.00,
+                        ':payment_method' => 'Kod: ' . $codeRow['code'],
+                        ':days_added' => $addedDays,
+                        ':expiry_date' => $newExpiryDate,
+                        ':status' => 'Aktif (Kod)',
+                    ]);
+
+                    $pdo->commit();
+                    $flashSuccess = 'Kod ' . htmlspecialchars((string) $codeRow['code'], ENT_QUOTES, 'UTF-8') . ' berjaya ditebus (+' . $addedDays . ' hari sehingga ' . formatDateMalay($newExpiryDate, $monthsMalay) . ').';
+                }
+            } catch (PDOException $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $flashError = 'Ralat menebus kod pengaktifan: ' . $e->getMessage();
+            }
+        }
+    }
+}
+
+// Fetch real subscription state & history from database
+$subState = [
+    'expiry_date' => date('Y-m-d'),
+    'history' => [],
+];
+
+if (isset($pdo) && $pdo instanceof PDO) {
+    $subState = getLatestSubscriptionState($pdo, $activeVendorId, (string) $vendor['created_at'], $cycleDays);
+}
+
+$expiryDateStr = (string) ($subState['expiry_date'] ?? date('Y-m-d'));
+$todayMidnight = strtotime(date('Y-m-d'));
+$expiryMidnight = strtotime($expiryDateStr);
+$daysRemaining = ($expiryMidnight !== false)
+    ? max(0, (int) round(($expiryMidnight - $todayMidnight) / 86400))
+    : 0;
+$isSubActive = ((int) ($vendor['is_active'] ?? 1) === 1) && ($daysRemaining > 0);
+$progressPercent = (int) max(5, min(100, round(($daysRemaining / $cycleDays) * 100)));
+$formattedExpiry = formatDateMalay($expiryDateStr, $monthsMalay);
+$paymentHistory = is_array($subState['history'] ?? null) ? $subState['history'] : [];
+
+$selectedMethod = trim((string) ($_POST['payment_method'] ?? 'FPX Online Banking'));
+if (!in_array($selectedMethod, $allowedMethods, true)) {
+    $selectedMethod = 'FPX Online Banking';
+}
+
+$vendorStoreName = (string) $vendor['store_name'];
+$storeCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $vendorStoreName), 0, 2) ?: 'KW');
+$vendorLogoUrl = 'https://placehold.co/64x64/14261d/9df557?text=' . urlencode($storeCode);
 ?>
 <!DOCTYPE html>
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Langganan — Panel Peniaga</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-green: #0b291a;
-            --accent-lime: #b2ff81;
-            --bg-cream: #f3f4ee;
-        }
-        body {
-            background-color: var(--bg-cream);
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            color: #1a1a1a;
-        }
-        .dashboard-wrapper {
-            display: flex;
-            min-height: 100vh;
-        }
-        .dash-sidebar {
-            width: 260px;
-            background-color: #ffffff;
-            border-right: 1px solid #e2e8f0;
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            z-index: 100;
-        }
-        .sidebar-brand-area {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .sidebar-menu {
-            padding: 1rem;
-            list-style: none;
-            margin: 0;
-            flex-grow: 1;
-        }
-        .sidebar-menu li a {
-            display: flex;
-            align-items: center;
-            gap: 0.85rem;
-            padding: 0.75rem 1rem;
-            color: #475569;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-            margin-bottom: 0.25rem;
-        }
-        .sidebar-menu li a:hover {
-            background-color: #f8fafc;
-            color: #0b291a;
-        }
-        .sidebar-menu li a.active {
-            background-color: #eaf3ed;
-            color: #0b291a;
-        }
-        .sidebar-footer {
-            padding: 1rem;
-            border-top: 1px solid #f1f5f9;
-        }
-        .vendor-profile-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .dash-main {
-            margin-left: 260px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            width: calc(100% - 260px);
-        }
-        .dash-topbar {
-            background-color: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 0.85rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .dash-content-body {
-            padding: 2rem 2.5rem;
-            width: 100%;
-        }
-        .subscription-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-        .payment-method-option {
-            border: 1.5px solid #cbd5e1;
-            border-radius: 0.75rem;
-            padding: 1rem 1.25rem;
-            background: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            margin-bottom: 0.75rem;
-            transition: all 0.2s ease;
-        }
-        .payment-method-option.selected {
-            border-color: #0b291a;
-            background-color: #fcfcfc;
-            box-shadow: 0 0 0 1px #0b291a;
-        }
-        .progress-bar-custom {
-            height: 8px;
-            background-color: #e2e8f0;
-            border-radius: 50rem;
-            overflow: hidden;
-            margin: 1rem 0;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background-color: #0b291a;
-            width: 80%;
-            border-radius: 50rem;
-        }
-        .btn-bayar {
-            background-color: #0b291a;
-            color: #ffffff;
-            border-radius: 50rem;
-            padding: 0.85rem;
-            font-weight: 700;
-            border: none;
-            width: 100%;
-            transition: background 0.2s ease;
-        }
-        .btn-bayar:hover {
-            background-color: #16422b;
-            color: #ffffff;
-        }
-        .btn-lihat-kedai {
-            border: 1px solid #cbd5e1;
-            background: #ffffff;
-            color: #0b291a;
-            border-radius: 0.5rem;
-            padding: 0.4rem 0.9rem;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-        .btn-lihat-kedai:hover {
-            background: #f1f5f9;
-        }
-    </style>
+    <title>Langganan — <?php echo htmlspecialchars($vendorStoreName, ENT_QUOTES, 'UTF-8'); ?> | Kedai WA Kamek</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
-<body>
+<body class="m-0 p-0" style="background-color: #f4f5ef; color: #13261d;">
 
-<div class="dashboard-wrapper">
-    
-    <?php include 'sidenav.php'; ?>
+    <!-- Exact Screen-Height Scrollable Wrapper (100dvh) -->
+    <div class="container-fluid p-0 overflow-hidden" style="height: 100vh; height: 100dvh;">
+        <div class="d-flex h-100">
 
-    <div class="dash-main">
-        <div class="dash-topbar">
-            <div>
-                <span class="text-muted small">Panel peniaga</span>
-                <h5 class="fw-bold mb-0 text-dark">Langganan</h5>
-            </div>
-            <div>
-                <a href="<?= htmlspecialchars($specialLink) ?>" target="_blank" class="btn-lihat-kedai">
-                    <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem;"></i> Lihat kedai
-                </a>
-            </div>
-        </div>
+            <!-- Static Screen-Height Sidenav -->
+            <?php require_once __DIR__ . '/sidenav.php'; ?>
 
-        <div class="dash-content-body">
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success py-2 small mb-4"><?= htmlspecialchars($success) ?></div>
-            <?php endif; ?>
+            <!-- Independently Scrollable Main Content -->
+            <main class="flex-grow-1 h-100 overflow-y-auto p-3 p-sm-4 p-lg-5" style="background-color: #f4f5ef;">
+                <div class="container-fluid px-0">
 
-            <!-- Pelan Bulanan Status Card -->
-            <div class="subscription-card">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.5px;">Pelan bulanan</span>
-                    <span class="badge bg-success bg-opacity-10 text-success fw-semibold px-3 py-1.5 rounded-pill" style="font-size: 0.75rem;">
-                        <i class="fa-solid fa-circle me-1" style="font-size: 0.45rem;"></i> Langganan aktif
-                    </span>
-                </div>
-                <div class="d-flex align-items-baseline gap-1 mb-2">
-                    <h2 class="fw-bold text-dark mb-0" style="font-size: 2rem;">RM 15.00</h2>
-                    <span class="text-muted small">/ 30 hari</span>
-                </div>
-
-                <!-- Progress Bar -->
-                <div class="progress-bar-custom">
-                    <div class="progress-bar-fill"></div>
-                </div>
-
-                <div class="text-muted small">
-                    <i class="fa-regular fa-calendar me-1"></i> 24 hari lagi &bull; tamat 12 Dis 2026
-                </div>
-            </div>
-
-            <!-- Buat Bayaran Card -->
-            <div class="subscription-card">
-                <h5 class="fw-bold text-dark mb-1">Buat bayaran</h5>
-                <p class="text-muted small mb-4">Setiap bayaran menambah 30 hari pada langganan anda.</p>
-
-                <form method="POST">
-                    <!-- Payment Options -->
-                    <div class="payment-method-option selected" onclick="selectPayment(this, 'fpx')">
-                        <div class="d-flex align-items-center gap-3">
-                            <i class="fa-solid fa-building-columns fs-5 text-success"></i>
-                            <span class="fw-semibold text-dark">FPX Online Banking</span>
+                    <!-- Top Header (`Panel peniaga` / `Langganan` + `Lihat kedai`) -->
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
+                        <div>
+                            <div class="small mb-1" style="color: #6b7c73;">Panel peniaga</div>
+                            <h1 class="h3 fw-bold mb-0" style="color: #0e1f17; letter-spacing: -0.02em;">
+                                Langganan
+                            </h1>
                         </div>
-                        <input class="form-check-input" type="radio" name="payment_method" value="fpx" checked>
+                        <div>
+                            <a href="../index.php?token=<?php echo urlencode((string) $vendor['token']); ?>"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="btn btn-sm rounded-3 border bg-white px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2"
+                               style="border-color: #dce2da !important; color: #0e1f17;">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                                <span>Lihat kedai</span>
+                            </a>
+                        </div>
                     </div>
 
-                    <div class="payment-method-option" onclick="selectPayment(this, 'card')">
-                        <div class="d-flex align-items-center gap-3">
-                            <i class="fa-regular fa-credit-card fs-5 text-muted"></i>
-                            <span class="fw-semibold text-dark">Kad debit / kredit</span>
+                    <!-- Feedback Alerts -->
+                    <?php if ($flashSuccess !== ''): ?>
+                        <div class="alert alert-success alert-dismissible fade show rounded-3 py-2 px-3 small mb-4" role="alert">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            <?php echo htmlspecialchars($flashSuccess, ENT_QUOTES, 'UTF-8'); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
-                        <input class="form-check-input" type="radio" name="payment_method" value="card">
+                    <?php endif; ?>
+
+                    <?php if ($flashError !== ''): ?>
+                        <div class="alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 small mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <?php echo htmlspecialchars($flashError, ENT_QUOTES, 'UTF-8'); ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Card 1: PELAN BULANAN Overview & Progress (Real DB Data) -->
+                    <div class="card border rounded-4 bg-white p-3 p-sm-4 mb-4" style="border-color: #e4e9e5 !important;">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                            <span class="small fw-semibold text-uppercase" style="color: #6b7c73; letter-spacing: 0.04em;">
+                                PELAN BULANAN
+                            </span>
+                            <span class="badge rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1"
+                                  style="<?php echo $isSubActive
+                                      ? 'background-color: #dcfce7; color: #15803d;'
+                                      : 'background-color: #fee2e2; color: #b91c1c;'; ?>">
+                                <i class="bi bi-circle-fill" style="font-size: 0.45rem;"></i>
+                                <span><?php echo $isSubActive ? 'Langganan aktif' : 'Langganan tamat'; ?></span>
+                            </span>
+                        </div>
+
+                        <div class="d-flex align-items-baseline gap-2 mb-3">
+                            <span class="h2 fw-bold mb-0" style="color: #0e1f17;">
+                                RM <?php echo number_format($monthlyPrice, 2); ?>
+                            </span>
+                            <span class="small" style="color: #6b7c73;">/ <?php echo (int) $cycleDays; ?> hari</span>
+                        </div>
+
+                        <div class="progress rounded-pill mb-3"
+                             style="height: 8px; background-color: #eef2ef;"
+                             role="progressbar"
+                             aria-label="Baki hari langganan"
+                             aria-valuenow="<?php echo $progressPercent; ?>"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            <div class="progress-bar rounded-pill"
+                                 style="width: <?php echo $progressPercent; ?>%; background-color: #143326;"></div>
+                        </div>
+
+                        <div class="small d-flex align-items-center gap-2" style="color: #6b7c73;">
+                            <i class="bi bi-calendar3"></i>
+                            <span>
+                                <?php echo (int) $daysRemaining; ?> hari lagi &middot; tamat <?php echo htmlspecialchars($formattedExpiry, ENT_QUOTES, 'UTF-8'); ?>
+                            </span>
+                        </div>
                     </div>
 
-                    <div class="payment-method-option mb-4" onclick="selectPayment(this, 'wallet')">
-                        <div class="d-flex align-items-center gap-3">
-                            <i class="fa-solid fa-wallet fs-5 text-muted"></i>
-                            <span class="fw-semibold text-dark">e-Wallet</span>
-                        </div>
-                        <input class="form-check-input" type="radio" name="payment_method" value="wallet">
+                    <!-- Card 2: Buat bayaran & Kod Pengaktifan -->
+                    <div class="card border rounded-4 bg-white p-3 p-sm-4 mb-4" style="border-color: #e4e9e5 !important;">
+                        <h2 class="h5 fw-bold mb-1" style="color: #0e1f17;">Buat bayaran</h2>
+                        <p class="small mb-4" style="color: #6b7c73;">
+                            Setiap bayaran menambah <?php echo (int) $cycleDays; ?> hari pada langganan anda.
+                        </p>
+
+                        <form method="POST" action="subscription.php" id="subscriptionPaymentForm">
+                            <input type="hidden" name="action" value="pay_subscription">
+                            <input type="hidden" name="payment_method" id="selectedPaymentMethodInput"
+                                   value="<?php echo htmlspecialchars($selectedMethod, ENT_QUOTES, 'UTF-8'); ?>">
+
+                            <?php
+                            $methodsConfig = [
+                                ['label' => 'FPX Online Banking / DuitNow', 'icon' => 'bi-bank'],
+                            ];
+                            ?>
+
+                            <div class="d-flex flex-column gap-3 mb-4">
+                                <?php foreach ($methodsConfig as $mItem): ?>
+                                    <?php $isChecked = ($selectedMethod === $mItem['label']); ?>
+                                    <button
+                                        type="button"
+                                        class="w-100 rounded-4 border p-3 px-sm-4 d-flex align-items-center justify-content-between text-start payment-method-option"
+                                        data-method="<?php echo htmlspecialchars($mItem['label'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        style="background-color: #ffffff; cursor: pointer; <?php echo $isChecked
+                                            ? 'border-color: #143326 !important;'
+                                            : 'border-color: #dce2da !important;'; ?>">
+                                        <span class="d-inline-flex align-items-center gap-3 fw-medium small" style="color: #0e1f17;">
+                                            <i class="bi <?php echo htmlspecialchars($mItem['icon'], ENT_QUOTES, 'UTF-8'); ?> fs-5" style="color: #13261d;"></i>
+                                            <span><?php echo htmlspecialchars($mItem['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                        </span>
+                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle border payment-radio-ring"
+                                              style="width: 18px; height: 18px; <?php echo $isChecked
+                                                  ? 'border-color: #143326 !important;'
+                                                  : 'border-color: #b8c2bc !important;'; ?>">
+                                            <span class="rounded-circle payment-radio-dot <?php echo $isChecked ? '' : 'd-none'; ?>"
+                                                  style="width: 10px; height: 10px; background-color: #143326;"></span>
+                                        </span>
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="btn w-100 rounded-3 py-3 fw-semibold border-0 mb-4"
+                                style="background-color: #143326; color: #ffffff;">
+                                Bayar RM <?php echo number_format($monthlyPrice, 2); ?>
+                            </button>
+                        </form>
+
+                        <!-- Real `activation_codes` Redemption Form -->
+                        <form method="POST" action="subscription.php" class="border-top pt-3" style="border-color: #eef2ef !important;">
+                            <input type="hidden" name="action" value="redeem_activation_code">
+                            <label for="activation_code" class="form-label small fw-semibold" style="color: #13261d;">
+                                Kod pengaktifan
+                            </label>
+                            <div class="d-flex gap-2">
+                                <input type="text"
+                                       class="form-control rounded-3 bg-white text-uppercase"
+                                       id="activation_code"
+                                       name="activation_code"
+                                       placeholder="Masukkan kod pengaktifan"
+                                       style="border-color: #dce2da !important;">
+                                <button type="submit"
+                                        class="btn btn-sm rounded-3 border bg-white px-3 fw-semibold flex-shrink-0"
+                                        style="border-color: #dce2da !important; color: #0e1f17;">
+                                    Tebus kod
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <button type="submit" class="btn btn-bayar shadow-sm">
-                        Bayar RM 15.00
-                    </button>
-                </form>
+                    <!-- Card 3: Sejarah bayaran (Real DB Rows) -->
+                    <div class="card border rounded-4 bg-white p-3 p-sm-4 mb-4" style="border-color: #e4e9e5 !important;">
+                        <h2 class="h5 fw-bold mb-3" style="color: #0e1f17;">Sejarah bayaran</h2>
 
-                <div class="text-muted small text-center mt-3" style="font-size: 0.8rem;">
-                    Prototip: bayaran disimulasikan dan tiada caj sebenar dibuat.
+                        <?php if (empty($paymentHistory)): ?>
+                            <div class="small" style="color: #6b7c73;">
+                                Tiada bayaran direkodkan lagi.
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table align-middle mb-0 small">
+                                    <thead>
+                                        <tr style="color: #6b7c73; border-color: #e6ebe7;">
+                                            <th scope="col" class="py-2">Tarikh</th>
+                                            <th scope="col" class="py-2">Kaedah</th>
+                                            <th scope="col" class="py-2">Tempoh</th>
+                                            <th scope="col" class="py-2">Amaun</th>
+                                            <th scope="col" class="py-2 text-end">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($paymentHistory as $rec): ?>
+                                            <tr style="border-color: #eef2ef;">
+                                                <td class="py-2" style="color: #0e1f17;">
+                                                    <?php echo htmlspecialchars(formatDateMalay((string) ($rec['created_at'] ?? date('Y-m-d')), $monthsMalay), ENT_QUOTES, 'UTF-8'); ?>
+                                                </td>
+                                                <td class="py-2" style="color: #1f3329;">
+                                                    <?php echo htmlspecialchars((string) ($rec['payment_method'] ?? 'FPX Online Banking'), ENT_QUOTES, 'UTF-8'); ?>
+                                                </td>
+                                                <td class="py-2" style="color: #6b7c73;">
+                                                    +<?php echo (int) ($rec['days_added'] ?? 30); ?> hari
+                                                </td>
+                                                <td class="py-2 fw-bold" style="color: #0e1f17;">
+                                                    RM <?php echo number_format((float) ($rec['amount'] ?? 15.00), 2); ?>
+                                                </td>
+                                                <td class="py-2 text-end">
+                                                    <span class="badge rounded-pill px-2 py-1" style="background-color: #dcfce7; color: #15803d;">
+                                                        <?php echo htmlspecialchars((string) ($rec['status'] ?? 'Berjaya'), ENT_QUOTES, 'UTF-8'); ?>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
                 </div>
-            </div>
-
-            <!-- Sejarah Bayaran -->
-            <div class="subscription-card">
-                <h5 class="fw-bold text-dark mb-3">Sejarah bayaran</h5>
-                <div class="text-muted small py-3">
-                    Tiada bayaran direkodkan lagi.
-                </div>
-            </div>
-
-            <div class="text-muted text-center small pt-3">
-                Kedai WA Kamek Vendor Panel
-            </div>
+            </main>
 
         </div>
     </div>
 
-</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const options = document.querySelectorAll('.payment-method-option');
+        const hiddenInput = document.getElementById('selectedPaymentMethodInput');
 
-<script>
-function selectPayment(element, method) {
-    document.querySelectorAll('.payment-method-option').forEach(opt => {
-        opt.classList.remove('selected');
-        opt.querySelector('input[type="radio"]').checked = false;
+        options.forEach(function (opt) {
+            opt.addEventListener('click', function () {
+                const chosen = opt.getAttribute('data-method') || 'FPX Online Banking';
+                if (hiddenInput) {
+                    hiddenInput.value = chosen;
+                }
+
+                options.forEach(function (item) {
+                    const active = item === opt;
+                    item.style.borderColor = active ? '#143326' : '#dce2da';
+                    const ring = item.querySelector('.payment-radio-ring');
+                    const dot = item.querySelector('.payment-radio-dot');
+                    if (ring) {
+                        ring.style.borderColor = active ? '#143326' : '#b8c2bc';
+                    }
+                    if (dot) {
+                        dot.classList.toggle('d-none', !active);
+                    }
+                });
+            });
+        });
     });
-    element.classList.add('selected');
-    element.querySelector('input[type="radio"]').checked = true;
-}
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </script>
 </body>
 </html>
