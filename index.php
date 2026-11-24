@@ -95,34 +95,46 @@ if (!empty($vendor_token)) {
             </div>
         <?php else: ?>
             <?php
-            $isStoreOpen = (($activeVendor['status'] ?? 'open') === 'open');
-            $cleanWa = preg_replace('/\D+/', '', (string) ($activeVendor['whatsapp_number'] ?? ''));
-            $storeNameEsc = htmlspecialchars((string) $activeVendor['store_name'], ENT_QUOTES, 'UTF-8');
-            $storeDescEsc = htmlspecialchars((string) ($activeVendor['description'] ?? ''), ENT_QUOTES, 'UTF-8');
-            $storeAddrEsc = htmlspecialchars((string) ($activeVendor['address'] ?? 'Sarawak'), ENT_QUOTES, 'UTF-8');
-            $bannerPlaceholder = 'https://placehold.co/1200x360/7c1d18/f8e5b4?text=' . urlencode((string) $activeVendor['store_name']);
-            ?>
+                $isStoreOpen = (($activeVendor['status'] ?? 'open') === 'open');
+                $cleanWa = preg_replace('/\D+/', '', (string) ($activeVendor['whatsapp_number'] ?? ''));
+                $storeNameEsc = htmlspecialchars((string) $activeVendor['store_name'], ENT_QUOTES, 'UTF-8');
+                $storeDescEsc = htmlspecialchars((string) ($activeVendor['description'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $storeAddrEsc = htmlspecialchars((string) ($activeVendor['address'] ?? 'Sarawak'), ENT_QUOTES, 'UTF-8');
 
-            <div class="container py-3 py-sm-4 pb-5 mb-5">
+                $bannerFile = trim((string) ($activeVendor['banner'] ?? ($activeVendor['logo'] ?? '')));
+                $bannerFallback = 'https://placehold.co/1200x360/0b291a/f3f4ee?text=' . urlencode((string) $activeVendor['store_name']);
 
-                <!-- Store Banner & Info Bar -->
-                <div class="card border rounded-4 bg-white overflow-hidden mb-3 shadow-sm" style="border-color: #e6ebe7 !important;">
-                    <div class="position-relative" style="height: 240px;">
-                        <img
-                            src="<?php echo htmlspecialchars($bannerPlaceholder, ENT_QUOTES, 'UTF-8'); ?>"
-                            alt="<?php echo $storeNameEsc; ?> Banner Placeholder"
-                            class="w-100 h-100 object-fit-cover"
-                        >
-                        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end p-3 p-sm-4 p-lg-5"
-                            style="background: linear-gradient(180deg, rgba(14,31,23,0.08) 0%, rgba(14,31,23,0.78) 100%);">
-                            <h1 class="h2 fw-bold text-white mb-1" style="letter-spacing: -0.02em;">
-                                <?php echo $storeNameEsc; ?>
-                            </h1>
-                            <p class="small text-white-50 mb-0">
-                                <?php echo $storeDescEsc; ?>
-                            </p>
+                if ($bannerFile !== '') {
+                    $cleanBannerFile = ltrim($bannerFile, '/');
+                    $bannerSrc = str_starts_with($cleanBannerFile, 'uploads/')
+                        ? $cleanBannerFile
+                        : 'uploads/vendors/' . $cleanBannerFile;
+                } else {
+                    $bannerSrc = $bannerFallback;
+                }
+                ?>
+
+                <div class="container py-3 py-sm-4 pb-5 mb-5">
+
+                    <!-- Store Banner & Info Bar -->
+                    <div class="card border rounded-4 bg-white overflow-hidden mb-3 shadow-sm" style="border-color: #e6ebe7 !important;">
+                        <div class="position-relative" style="height: 240px;">
+                            <img
+                                src="<?php echo htmlspecialchars($bannerSrc, ENT_QUOTES, 'UTF-8'); ?>"
+                                alt="<?php echo $storeNameEsc; ?> Banner"
+                                class="w-100 h-100 object-fit-cover"
+                                onerror="this.onerror=null;this.src='<?php echo htmlspecialchars($bannerFallback, ENT_QUOTES, 'UTF-8'); ?>';"
+                            >
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end p-3 p-sm-4 p-lg-5"
+                                style="background: linear-gradient(180deg, rgba(14,31,23,0.08) 0%, rgba(14,31,23,0.78) 100%);">
+                                <h1 class="h2 fw-bold text-white mb-1" style="letter-spacing: -0.02em;">
+                                    <?php echo $storeNameEsc; ?>
+                                </h1>
+                                <p class="small text-white-50 mb-0">
+                                    <?php echo $storeDescEsc; ?>
+                                </p>
+                            </div>
                         </div>
-                    </div>
 
                     <div class="px-3 px-sm-4 py-3 border-top bg-white d-flex flex-wrap align-items-center gap-3 small"
                         style="border-color: #eef2ef !important; color: #6b7c73;">
@@ -186,7 +198,10 @@ if (!empty($vendor_token)) {
                             $itemStock = (int) ($menu['stock'] ?? 0);
                             $isAvail = !empty($menu['is_available']) && ($itemStock > 0);
                             $itemCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $itemName), 0, 3) ?: 'MN');
-                            $itemPlaceholder = 'https://placehold.co/120x120/fdf4f2/7c1d18?text=' . urlencode($itemCode);
+                            $itemImageFile = trim($menu['image'] ?? '');
+                            $itemPlaceholder = !empty($itemImageFile)
+                                ? 'uploads/menu/' . rawurlencode($itemImageFile)
+                                : 'https://placehold.co/120x120/f2f4f3/0e3b24?text=' . urlencode($itemCode ?? 'Item');
                             ?>
                             <div class="col-12 col-lg-6 vendor-menu-col"
                                 data-search="<?php echo htmlspecialchars(strtolower($itemName . ' ' . $itemDesc), ENT_QUOTES, 'UTF-8'); ?>">
@@ -194,12 +209,11 @@ if (!empty($vendor_token)) {
                                     <div class="d-flex align-items-center justify-content-between gap-3 h-100">
 
                                         <div class="d-flex align-items-center gap-3 min-w-0">
-                                            <img
-                                                src="<?php echo htmlspecialchars($itemPlaceholder, ENT_QUOTES, 'UTF-8'); ?>"
-                                                alt="<?php echo htmlspecialchars($itemName, ENT_QUOTES, 'UTF-8'); ?> Placeholder"
-                                                class="rounded-3 object-fit-cover flex-shrink-0 border"
-                                                style="width: 74px; height: 74px; border-color: #e4e9e5 !important;"
-                                            >
+                                           <img src="<?= htmlspecialchars($itemPlaceholder) ?>"
+                                                alt="<?= htmlspecialchars($item['name'] ?? '') ?>"
+                                                class="catalog-thumb"
+                                                onerror="this.onerror=null;this.src='https://placehold.co/120x120/f2f4f3/0e3b24?text=Item';"
+                                                style="width: 74px; height: 74px; border-color: #e4e9e5 !important;">
                                             <div class="min-w-0">
                                                 <h2 class="h6 fw-bold mb-1 text-truncate" style="color: #0e1f17;">
                                                     <?php echo htmlspecialchars($itemName, ENT_QUOTES, 'UTF-8'); ?>
@@ -484,24 +498,15 @@ if (!empty($vendor_token)) {
 
                 const pinBtn = document.getElementById('useGoogleMapsPinBtn');
                 const addrInput = document.getElementById('orderDeliveryAddress');
+                const storeAddress = <?= json_encode($rawStoreAddress, JSON_UNESCAPED_UNICODE) ?>;
+
                 if (pinBtn && addrInput) {
                     pinBtn.addEventListener('click', function () {
-                        if (!navigator.geolocation) {
-                            addrInput.value = (addrInput.value ? addrInput.value + '\n' : '') + 'Pin Lokasi: https://maps.google.com/?q=1.4750,110.5110';
-                            return;
-                        }
-                        pinBtn.disabled = true;
-                        navigator.geolocation.getCurrentPosition(
-                            function (pos) {
-                                const pinUrl = 'https://maps.google.com/?q=' + pos.coords.latitude.toFixed(6) + ',' + pos.coords.longitude.toFixed(6);
-                                addrInput.value = (addrInput.value.trim() ? addrInput.value.trim() + '\n' : '') + 'Pin Lokasi: ' + pinUrl;
-                                pinBtn.disabled = false;
-                            },
-                            function () {
-                                addrInput.value = (addrInput.value.trim() ? addrInput.value.trim() + '\n' : '') + 'Pin Lokasi: https://maps.google.com/?q=1.4750,110.5110';
-                                pinBtn.disabled = false;
-                            }
-                        );
+                        const currentText = addrInput.value.trim();
+                        const queryTarget = storeAddress || currentText;
+                        const pinUrl = 'https://maps.google.com/?q=' + encodeURIComponent(queryTarget);
+
+                        addrInput.value = (currentText ? currentText + '\n' : '') + 'Pin Lokasi: ' + pinUrl;
                     });
                 }
 
